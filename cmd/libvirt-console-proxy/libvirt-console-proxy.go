@@ -37,6 +37,17 @@ import (
 	"strings"
 )
 
+type stringList []string
+
+func (i *stringList) String() string {
+	return "my string representation"
+}
+
+func (i *stringList) Set(value string) error {
+	*i = append(*i, value)
+	return nil
+}
+
 var (
 	listeninsecure = flag.Bool("listen-insecure", false,
 		"Run public listener without TLS encryption")
@@ -63,6 +74,8 @@ var (
 		"Path to TLS internal client key PEM file")
 	connecttlsca = flag.String("connect-tls-ca", "/etc/pki/libvirt-console-proxy/client-ca.pem",
 		"Path to TLS internal client CA PEM file")
+
+	libvirturis stringList
 )
 
 func loadTLSConfig(certFile, keyFile, caFile, addr string) (*tls.Config, error) {
@@ -104,20 +117,25 @@ func loadTLSConfig(certFile, keyFile, caFile, addr string) (*tls.Config, error) 
 }
 
 func main() {
+	flag.Var(&libvirturis, "libvirt-uri",
+		"List of libvirt URIs to connect to")
 	flag.Parse()
 
 	var connector proxy.Connector
+	var connecttlsconfig *tls.Config
+	if !*connectinsecure {
+		var err error
+		glog.V(1).Info("Loading client TLS config")
+		connecttlsconfig, err = loadTLSConfig(*connecttlscert, *connecttlskey, *connecttlsca, *connectaddr)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	}
+
 	switch proxy.ConnectorType(*connectortype) {
 	case proxy.CONNECTOR_FIXED:
-		var connecttlsconfig *tls.Config
-		if !*connectinsecure {
-			var err error
-			connecttlsconfig, err = loadTLSConfig(*connecttlscert, *connecttlskey, *connecttlsca, *connectaddr)
-			if err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
-			}
-		}
+		glog.V(1).Info("Using fixed connector")
 		svcconfig := &proxy.ServiceConfig{
 			Type:      proxy.ServiceType(*connectservice),
 			Insecure:  *connectinsecure,
@@ -128,8 +146,12 @@ func main() {
 			ComputeAddr:   *connectaddr,
 			ServiceConfig: svcconfig,
 		}
+	case proxy.CONNECTOR_LIBVIRT:
+		glog.V(1).Info("Using libvirt connector")
+		connector = proxy.NewLibvirtConnector(libvirturis, connecttlsconfig)
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown connector type %s\n", *connectortype)
+		os.Exit(1)
 	}
 
 	var listentlsconfig *tls.Config

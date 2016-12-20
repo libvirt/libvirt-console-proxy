@@ -1,6 +1,7 @@
 package: libvirt.org/libvirt-console-proxy
 import:
 - package: github.com/golang/glog
+- package: github.com/libvirt/libvirt-go
 - package: golang.org/x/net
   subpackages:
   - websocket

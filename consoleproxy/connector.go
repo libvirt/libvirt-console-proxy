@@ -33,7 +33,8 @@ import (
 type ConnectorType string
 
 const (
-	CONNECTOR_FIXED = "fixed"
+	CONNECTOR_FIXED   = "fixed"
+	CONNECTOR_LIBVIRT = "libvirt"
 )
 
 type Connector interface {
