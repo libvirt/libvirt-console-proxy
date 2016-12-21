@@ -331,7 +331,7 @@ func (c *LibvirtConnector) Associate(tenant *websocket.Conn, token string) (net.
 		return nil, nil, fmt.Errorf("No token info with value %s", token)
 	}
 
-	addr := tokenInfo.Host + ":" + tokenInfo.Port
+	addr := net.JoinHostPort(tokenInfo.Host, tokenInfo.Port)
 	glog.V(1).Infof("Opening compute %s domain %s / %s", addr, tokenInfo.Domain.Name, tokenInfo.Domain.UUID)
 
 	conn, err := net.Dial("tcp", addr)

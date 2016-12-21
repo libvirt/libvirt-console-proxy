@@ -103,7 +103,7 @@ func (c *EtcdConnector) Associate(tenant *websocket.Conn, token string) (net.Con
 		return nil, nil, err
 	}
 
-	addr := tokenInfo.Host + ":" + tokenInfo.Port
+	addr := net.JoinHostPort(tokenInfo.Host, tokenInfo.Port)
 	glog.V(1).Infof("Opening compute %s", addr)
 
 	conn, err := net.Dial("tcp", addr)

@@ -33,8 +33,8 @@ import (
 	"github.com/golang/glog"
 	"io/ioutil"
 	proxy "libvirt.org/libvirt-console-proxy/consoleproxy"
+	"net"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -72,8 +72,10 @@ var (
 	connecttlsca = flag.String("connect-tls-ca", "/etc/pki/libvirt-console-proxy/client-ca.pem",
 		"Path to TLS internal client CA PEM file")
 
-	fixedaddr = flag.String("fixed-addr", "127.0.0.1:5900",
-		"TCP address and port to connect to")
+	fixedhost = flag.String("fixed-host", "127.0.0.1",
+		"TCP host to connect to")
+	fixedport = flag.String("fixed-port", "5900",
+		"TCP port to connect to")
 	fixedservice = flag.String("fixed-service", "vnc",
 		"Service type to connect to (vnc, spice or serial)")
 	fixedtoken = flag.String("fixed-token", "",
@@ -143,12 +145,7 @@ func main() {
 	switch proxy.ConnectorType(*connecttype) {
 	case proxy.CONNECTOR_FIXED:
 		glog.V(1).Info("Using fixed connector")
-		addrbits := strings.Split(*fixedaddr, ":")
-		if len(addrbits) != 2 {
-			fmt.Fprintf(os.Stderr, "Expected host:port in %s\n", *fixedaddr)
-			os.Exit(1)
-		}
-		connecttlsconfig.ServerName = addrbits[0]
+		connecttlsconfig.ServerName = *fixedhost
 
 		svcconfig := &proxy.ServiceConfig{
 			Type:      proxy.ServiceType(*fixedservice),
@@ -157,7 +154,7 @@ func main() {
 		}
 
 		connector = &proxy.FixedConnector{
-			ComputeAddr:   *fixedaddr,
+			ComputeAddr:   net.JoinHostPort(*fixedhost, *fixedport),
 			ServiceConfig: svcconfig,
 			Token:         *fixedtoken,
 		}
