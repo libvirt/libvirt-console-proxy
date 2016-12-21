@@ -1,4 +1,4 @@
 *~
 vendor/
-libvirt-console-proxy
+virt-console-proxyd
 glide.lock
