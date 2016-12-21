@@ -26,6 +26,7 @@
 package libvirtconsoleproxy
 
 import (
+	"fmt"
 	"golang.org/x/net/websocket"
 	"net"
 )
@@ -39,7 +40,7 @@ const (
 )
 
 type Connector interface {
-	Associate(tenant *websocket.Conn) (net.Conn, *ServiceConfig, error)
+	Associate(tenant *websocket.Conn, token string) (net.Conn, *ServiceConfig, error)
 }
 
 // FixedConnector allows tenants to connect to a single fixed
@@ -47,10 +48,13 @@ type Connector interface {
 type FixedConnector struct {
 	ComputeAddr   string
 	ServiceConfig *ServiceConfig
+	Token         string
 }
 
-func (c *FixedConnector) Associate(tenant *websocket.Conn) (net.Conn, *ServiceConfig, error) {
-
+func (c *FixedConnector) Associate(tenant *websocket.Conn, token string) (net.Conn, *ServiceConfig, error) {
+	if c.Token != "" && c.Token != token {
+		return nil, nil, fmt.Errorf("Request does not have required token value")
+	}
 	conn, err := net.Dial("tcp", c.ComputeAddr)
 	if err != nil {
 		return nil, nil, err

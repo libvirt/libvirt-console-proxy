@@ -322,22 +322,11 @@ func NewLibvirtConnector(uris []string, tlsConfig *tls.Config) *LibvirtConnector
 	return connector
 }
 
-func (c *LibvirtConnector) Associate(tenant *websocket.Conn) (net.Conn, *ServiceConfig, error) {
-	req := tenant.Request()
-
-	req.ParseForm()
-
-	token, ok := req.Form["token"]
-	if !ok {
-		return nil, nil, fmt.Errorf("Token parameter is missing")
+func (c *LibvirtConnector) Associate(tenant *websocket.Conn, token string) (net.Conn, *ServiceConfig, error) {
+	if token == "" {
+		return nil, nil, fmt.Errorf("A non-empty token is required")
 	}
-
-	if len(token) != 1 {
-		return nil, nil, fmt.Errorf("Expected a single token parameter")
-	}
-
-	glog.V(1).Infof("Finding token %s", token[0])
-	tokenInfo, ok := c.Tokens[token[0]]
+	tokenInfo, ok := c.Tokens[token]
 	if !ok {
 		return nil, nil, fmt.Errorf("No token info with value %s", token)
 	}

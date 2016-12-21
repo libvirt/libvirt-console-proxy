@@ -85,7 +85,23 @@ func (s *ConsoleServer) Serve() error {
 
 func (s *ConsoleServer) handleClient(tenant *websocket.Conn) {
 	glog.V(1).Infof("New tenant connection")
-	compute, config, err := s.Connector.Associate(tenant)
+	req := tenant.Request()
+
+	req.ParseForm()
+
+	token, ok := req.Form["token"]
+	var tokenValue string
+	if ok {
+		if len(token) != 1 {
+			tenant.Close()
+			fmt.Fprintln(os.Stderr, "Expected a single token parameter")
+			return
+		}
+
+		glog.V(1).Infof("Using token %s", token[0])
+		tokenValue = token[0]
+	}
+	compute, config, err := s.Connector.Associate(tenant, tokenValue)
 	if err != nil {
 		tenant.Close()
 		fmt.Fprintln(os.Stderr, err)
