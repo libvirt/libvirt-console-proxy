@@ -149,6 +149,7 @@ func (c *LibvirtConnector) addDomain(host *LibvirtConnectorHost, dom *libvirt.Do
 		if err != nil {
 			return err
 		}
+		defer secret.Free()
 
 		token, err := secret.GetValue(0)
 		if err != nil {
