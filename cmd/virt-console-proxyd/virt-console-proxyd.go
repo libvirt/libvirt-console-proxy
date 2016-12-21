@@ -61,20 +61,21 @@ var (
 	listentlsca = flag.String("listen-tls-ca", "/etc/pki/libvirt-console-proxy/server-ca.pem",
 		"Path to TLS public server CA cert PEM file")
 
-	connectortype = flag.String("connector-type", "fixed",
-		"Connector to use to access compute node servers")
+	connecttype = flag.String("connect-type", "fixed",
+		"Connector to use to access compute node servers, 'fixed', 'libvirt' or 'etcd'")
 	connectinsecure = flag.Bool("connect-insecure", false,
-		"Run internal connection without TLS encryption")
-	connectaddr = flag.String("connect-addr", "127.0.0.1:5900",
-		"TCP address and port to connect to")
-	connectservice = flag.String("connect-service", "vnc",
-		"Service type to connect to (vnc, spice or serial)")
+		"Allow running internal connection without TLS encryption")
 	connecttlscert = flag.String("connect-tls-cert", "/etc/pki/libvirt-console-proxy/client-cert.pem",
 		"Path to TLS internal client cert PEM file")
 	connecttlskey = flag.String("connect-tls-key", "/etc/pki/libvirt-console-proxy/client-key.pem",
 		"Path to TLS internal client key PEM file")
 	connecttlsca = flag.String("connect-tls-ca", "/etc/pki/libvirt-console-proxy/client-ca.pem",
 		"Path to TLS internal client CA PEM file")
+
+	fixedaddr = flag.String("fixed-addr", "127.0.0.1:5900",
+		"TCP address and port to connect to")
+	fixedservice = flag.String("fixed-service", "vnc",
+		"Service type to connect to (vnc, spice or serial)")
 
 	libvirturis stringList
 
@@ -85,7 +86,7 @@ var (
 		"etcd request timeout in seconds, default 30")
 )
 
-func loadTLSConfig(certFile, keyFile, caFile, addr string) (*tls.Config, error) {
+func loadTLSConfig(certFile, keyFile, caFile string, client bool) (*tls.Config, error) {
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
 		return nil, err
@@ -103,15 +104,10 @@ func loadTLSConfig(certFile, keyFile, caFile, addr string) (*tls.Config, error) 
 	}
 
 	var config *tls.Config
-	if addr != "" {
-		addrbits := strings.Split(addr, ":")
-		if len(addrbits) != 2 {
-			return nil, fmt.Errorf("Expected host:port in %s\n", addr)
-		}
+	if client {
 		config = &tls.Config{
 			Certificates: []tls.Certificate{cert},
 			RootCAs:      calist,
-			ServerName:   addrbits[0],
 		}
 	} else {
 		config = &tls.Config{
@@ -135,24 +131,31 @@ func main() {
 	if !*connectinsecure {
 		var err error
 		glog.V(1).Info("Loading client TLS config")
-		connecttlsconfig, err = loadTLSConfig(*connecttlscert, *connecttlskey, *connecttlsca, *connectaddr)
+		connecttlsconfig, err = loadTLSConfig(*connecttlscert, *connecttlskey, *connecttlsca, true)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
 	}
 
-	switch proxy.ConnectorType(*connectortype) {
+	switch proxy.ConnectorType(*connecttype) {
 	case proxy.CONNECTOR_FIXED:
 		glog.V(1).Info("Using fixed connector")
+		addrbits := strings.Split(*fixedaddr, ":")
+		if len(addrbits) != 2 {
+			fmt.Fprintf(os.Stderr, "Expected host:port in %s\n", *fixedaddr)
+			os.Exit(1)
+		}
+		connecttlsconfig.ServerName = addrbits[0]
+
 		svcconfig := &proxy.ServiceConfig{
-			Type:      proxy.ServiceType(*connectservice),
+			Type:      proxy.ServiceType(*fixedservice),
 			Insecure:  *connectinsecure,
 			TLSConfig: connecttlsconfig,
 		}
 
 		connector = &proxy.FixedConnector{
-			ComputeAddr:   *connectaddr,
+			ComputeAddr:   *fixedaddr,
 			ServiceConfig: svcconfig,
 		}
 	case proxy.CONNECTOR_LIBVIRT:
@@ -167,14 +170,14 @@ func main() {
 			os.Exit(1)
 		}
 	default:
-		fmt.Fprintf(os.Stderr, "Unknown connector type %s\n", *connectortype)
+		fmt.Fprintf(os.Stderr, "Unknown connector type %s\n", *connecttype)
 		os.Exit(1)
 	}
 
 	var listentlsconfig *tls.Config
 	if !*listeninsecure {
 		var err error
-		listentlsconfig, err = loadTLSConfig(*listentlscert, *listentlskey, *listentlsca, "")
+		listentlsconfig, err = loadTLSConfig(*listentlscert, *listentlskey, *listentlsca, false)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
