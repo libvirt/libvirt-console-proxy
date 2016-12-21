@@ -76,6 +76,8 @@ var (
 		"TCP address and port to connect to")
 	fixedservice = flag.String("fixed-service", "vnc",
 		"Service type to connect to (vnc, spice or serial)")
+	fixedtoken = flag.String("fixed-token", "",
+		"Token to validate")
 
 	libvirturis stringList
 
@@ -157,6 +159,7 @@ func main() {
 		connector = &proxy.FixedConnector{
 			ComputeAddr:   *fixedaddr,
 			ServiceConfig: svcconfig,
+			Token:         *fixedtoken,
 		}
 	case proxy.CONNECTOR_LIBVIRT:
 		glog.V(1).Info("Using libvirt connector")
