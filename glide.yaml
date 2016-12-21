@@ -1,7 +1,12 @@
 package: libvirt.org/libvirt-console-proxy
 import:
+- package: github.com/coreos/etcd
+  subpackages:
+  - client
+  - clientv3
 - package: github.com/golang/glog
 - package: github.com/libvirt/libvirt-go
 - package: golang.org/x/net
   subpackages:
+  - context
   - websocket

@@ -35,6 +35,7 @@ import (
 	proxy "libvirt.org/libvirt-console-proxy/consoleproxy"
 	"os"
 	"strings"
+	"time"
 )
 
 type stringList []string
@@ -76,6 +77,12 @@ var (
 		"Path to TLS internal client CA PEM file")
 
 	libvirturis stringList
+
+	etcduris    stringList
+	etcdversion = flag.Int("etcd-version", 3,
+		"Version of etcd API to use, 2 or 3 (default)")
+	etcdtimeout = flag.Int("etcd-timeout", 30,
+		"etcd request timeout in seconds, default 30")
 )
 
 func loadTLSConfig(certFile, keyFile, caFile, addr string) (*tls.Config, error) {
@@ -119,6 +126,8 @@ func loadTLSConfig(certFile, keyFile, caFile, addr string) (*tls.Config, error) 
 func main() {
 	flag.Var(&libvirturis, "libvirt-uri",
 		"List of libvirt URIs to connect to")
+	flag.Var(&etcduris, "etcd-uri",
+		"List of etcd URIs to connect to")
 	flag.Parse()
 
 	var connector proxy.Connector
@@ -149,6 +158,14 @@ func main() {
 	case proxy.CONNECTOR_LIBVIRT:
 		glog.V(1).Info("Using libvirt connector")
 		connector = proxy.NewLibvirtConnector(libvirturis, connecttlsconfig)
+	case proxy.CONNECTOR_ETCD:
+		glog.V(1).Info("Using etcd connector")
+		var err error
+		connector, err = proxy.NewEtcdConnector(etcduris, time.Duration(*etcdtimeout)*time.Second, *etcdversion == 3, connecttlsconfig)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown connector type %s\n", *connectortype)
 		os.Exit(1)

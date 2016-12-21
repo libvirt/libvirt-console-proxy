@@ -35,6 +35,7 @@ type ConnectorType string
 const (
 	CONNECTOR_FIXED   = "fixed"
 	CONNECTOR_LIBVIRT = "libvirt"
+	CONNECTOR_ETCD    = "etcd"
 )
 
 type Connector interface {
