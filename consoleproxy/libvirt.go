@@ -31,6 +31,7 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	libvirt "github.com/libvirt/libvirt-go"
+	libvirtxml "github.com/libvirt/libvirt-go-xml"
 	"golang.org/x/net/websocket"
 	"net"
 	"time"
@@ -126,6 +127,17 @@ func (c *LibvirtConnector) addDomain(host *LibvirtConnectorHost, dom *libvirt.Do
 	}
 
 	glog.V(1).Infof("Adding domain %s / %s", name, uuid)
+
+	domxml, err := dom.GetXMLDesc(0)
+	if err != nil {
+		return err
+	}
+
+	var domcfg libvirtxml.Domain
+	err = xml.Unmarshal([]byte(domxml), domcfg)
+	if err != nil {
+		return err
+	}
 
 	metaxml, err := dom.GetMetadata(libvirt.DOMAIN_METADATA_ELEMENT, XMLNS, libvirt.DOMAIN_AFFECT_LIVE)
 	if err != nil {
