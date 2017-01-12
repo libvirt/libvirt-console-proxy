@@ -31,7 +31,7 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	"golang.org/x/net/websocket"
-	"libvirt.org/libvirt-console-proxy/storage"
+	"libvirt.org/libvirt-console-proxy/pkg/storage"
 	"net"
 	"time"
 )

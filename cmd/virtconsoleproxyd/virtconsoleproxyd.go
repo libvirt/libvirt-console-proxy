@@ -32,7 +32,7 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	"io/ioutil"
-	proxy "libvirt.org/libvirt-console-proxy/consoleproxy"
+	proxy "libvirt.org/libvirt-console-proxy/pkg/consoleproxy"
 	"net"
 	"os"
 	"time"
