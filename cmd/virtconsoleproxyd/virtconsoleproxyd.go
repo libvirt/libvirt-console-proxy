@@ -35,7 +35,6 @@ import (
 	proxy "libvirt.org/libvirt-console-proxy/pkg/consoleproxy"
 	"net"
 	"os"
-	"time"
 )
 
 type stringList []string
@@ -61,8 +60,6 @@ var (
 	listentlsca = flag.String("listen-tls-ca", "/etc/pki/libvirt-console-proxy/server-ca.pem",
 		"Path to TLS public server CA cert PEM file")
 
-	connecttype = flag.String("connect-type", "fixed",
-		"Connector to use to access compute node servers, 'fixed', 'libvirt' or 'etcd'")
 	connectinsecure = flag.Bool("connect-insecure", false,
 		"Allow running internal connection without TLS encryption")
 	connecttlscert = flag.String("connect-tls-cert", "/etc/pki/libvirt-console-proxy/client-cert.pem",
@@ -80,14 +77,6 @@ var (
 		"Service type to connect to (vnc, spice or serial)")
 	fixedtoken = flag.String("fixed-token", "",
 		"Token to validate")
-
-	libvirturis stringList
-
-	etcduris    stringList
-	etcdversion = flag.Int("etcd-version", 3,
-		"Version of etcd API to use, 2 or 3 (default)")
-	etcdtimeout = flag.Int("etcd-timeout", 30,
-		"etcd request timeout in seconds, default 30")
 )
 
 func loadTLSConfig(certFile, keyFile, caFile string, client bool) (*tls.Config, error) {
@@ -124,10 +113,6 @@ func loadTLSConfig(certFile, keyFile, caFile string, client bool) (*tls.Config, 
 }
 
 func main() {
-	flag.Var(&libvirturis, "libvirt-uri",
-		"List of libvirt URIs to connect to")
-	flag.Var(&etcduris, "etcd-uri",
-		"List of etcd URIs to connect to")
 	flag.Parse()
 
 	var connector proxy.Connector
@@ -142,36 +127,18 @@ func main() {
 		}
 	}
 
-	switch proxy.ConnectorType(*connecttype) {
-	case proxy.CONNECTOR_FIXED:
-		glog.V(1).Info("Using fixed connector")
-		connecttlsconfig.ServerName = *fixedhost
+	connecttlsconfig.ServerName = *fixedhost
 
-		svcconfig := &proxy.ServiceConfig{
-			Type:      proxy.ServiceType(*fixedservice),
-			Insecure:  *connectinsecure,
-			TLSConfig: connecttlsconfig,
-		}
+	svcconfig := &proxy.ServiceConfig{
+		Type:      proxy.ServiceType(*fixedservice),
+		Insecure:  *connectinsecure,
+		TLSConfig: connecttlsconfig,
+	}
 
-		connector = &proxy.FixedConnector{
-			ComputeAddr:   net.JoinHostPort(*fixedhost, *fixedport),
-			ServiceConfig: svcconfig,
-			Token:         *fixedtoken,
-		}
-	case proxy.CONNECTOR_LIBVIRT:
-		glog.V(1).Info("Using libvirt connector")
-		connector = proxy.NewLibvirtConnector(libvirturis, connecttlsconfig)
-	case proxy.CONNECTOR_ETCD:
-		glog.V(1).Info("Using etcd connector")
-		var err error
-		connector, err = proxy.NewEtcdConnector(etcduris, time.Duration(*etcdtimeout)*time.Second, *etcdversion == 3, connecttlsconfig)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
-	default:
-		fmt.Fprintf(os.Stderr, "Unknown connector type %s\n", *connecttype)
-		os.Exit(1)
+	connector = &proxy.FixedConnector{
+		ComputeAddr:   net.JoinHostPort(*fixedhost, *fixedport),
+		ServiceConfig: svcconfig,
+		Token:         *fixedtoken,
 	}
 
 	var listentlsconfig *tls.Config
