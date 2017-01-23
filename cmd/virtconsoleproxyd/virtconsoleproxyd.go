@@ -33,20 +33,9 @@ import (
 	"github.com/golang/glog"
 	"io/ioutil"
 	proxy "libvirt.org/libvirt-console-proxy/pkg/consoleproxy"
-	"net"
 	"os"
+	"strings"
 )
-
-type stringList []string
-
-func (i *stringList) String() string {
-	return "my string representation"
-}
-
-func (i *stringList) Set(value string) error {
-	*i = append(*i, value)
-	return nil
-}
 
 var (
 	listeninsecure = flag.Bool("listen-insecure", false,
@@ -69,14 +58,18 @@ var (
 	connecttlsca = flag.String("connect-tls-ca", "/etc/pki/libvirt-console-proxy/client-ca.pem",
 		"Path to TLS internal client CA PEM file")
 
-	fixedhost = flag.String("fixed-host", "127.0.0.1",
-		"TCP host to connect to")
-	fixedport = flag.String("fixed-port", "5900",
-		"TCP port to connect to")
-	fixedservice = flag.String("fixed-service", "vnc",
-		"Service type to connect to (vnc, spice or serial)")
-	fixedtoken = flag.String("fixed-token", "",
-		"Token to validate")
+	resolvermode = flag.String("resolver-mode", "builtin",
+		"Type of resolver to use 'builtin' or 'external'")
+	resolvertokens = flag.String("resolver-tokens", "/etc/libvirt/consoleproxy/tokens.json",
+		"Path to token file for builin resolver")
+	resolveruri = flag.String("resolver-uri", "https://127.0.0.1:8081/consoleresolver/",
+		"URI base for the external resolver REST service")
+	resolvertlscert = flag.String("resolver-tls-cert", "/etc/pki/libvirt-console-proxy/client-cert.pem",
+		"Path to TLS internal client cert PEM file")
+	resolvertlskey = flag.String("resolver-tls-key", "/etc/pki/libvirt-console-proxy/client-key.pem",
+		"Path to TLS internal client key PEM file")
+	resolvertlsca = flag.String("resolver-tls-ca", "/etc/pki/libvirt-console-proxy/client-ca.pem",
+		"Path to TLS internal client CA PEM file")
 )
 
 func loadTLSConfig(certFile, keyFile, caFile string, client bool) (*tls.Config, error) {
@@ -115,10 +108,9 @@ func loadTLSConfig(certFile, keyFile, caFile string, client bool) (*tls.Config, 
 func main() {
 	flag.Parse()
 
-	var connector proxy.Connector
+	var err error
 	var connecttlsconfig *tls.Config
 	if !*connectinsecure {
-		var err error
 		glog.V(1).Info("Loading client TLS config")
 		connecttlsconfig, err = loadTLSConfig(*connecttlscert, *connecttlskey, *connecttlsca, true)
 		if err != nil {
@@ -127,18 +119,25 @@ func main() {
 		}
 	}
 
-	connecttlsconfig.ServerName = *fixedhost
-
-	svcconfig := &proxy.ServiceConfig{
-		Type:      proxy.ServiceType(*fixedservice),
-		Insecure:  *connectinsecure,
-		TLSConfig: connecttlsconfig,
+	var resolver proxy.Resolver
+	if *resolvermode == "builtin" {
+		resolver, err = proxy.NewBuiltinResolver(*resolvertokens)
+	} else {
+		var resolvertlsconfig *tls.Config
+		if strings.HasPrefix(*resolveruri, "https") {
+			var err error
+			glog.V(1).Info("Loading resolver TLS config")
+			resolvertlsconfig, err = loadTLSConfig(*resolvertlscert, *resolvertlskey, *resolvertlsca, true)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+		}
+		resolver, err = proxy.NewExternalResolver(*resolveruri, resolvertlsconfig)
 	}
-
-	connector = &proxy.FixedConnector{
-		ComputeAddr:   net.JoinHostPort(*fixedhost, *fixedport),
-		ServiceConfig: svcconfig,
-		Token:         *fixedtoken,
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 
 	var listentlsconfig *tls.Config
@@ -152,9 +151,9 @@ func main() {
 	}
 
 	glog.V(1).Info("Starting console server")
-	server := proxy.NewConsoleServer(*listenaddr, *listeninsecure, listentlsconfig, connector)
+	server := proxy.NewConsoleServer(*listenaddr, *listeninsecure, listentlsconfig, connecttlsconfig, resolver)
 
-	err := server.Serve()
+	err = server.Serve()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

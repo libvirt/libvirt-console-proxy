@@ -25,10 +25,6 @@
 
 package libvirtconsoleproxy
 
-import (
-	"crypto/tls"
-)
-
 type ServiceType string
 
 const (
@@ -38,7 +34,7 @@ const (
 )
 
 type ServiceConfig struct {
-	Type      ServiceType
-	Insecure  bool
-	TLSConfig *tls.Config
+	Type     ServiceType `json:"type"`
+	Address  string      `json:"address"`
+	Insecure bool        `json:"insecure"`
 }

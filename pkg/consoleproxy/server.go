@@ -30,26 +30,27 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	"golang.org/x/net/websocket"
+	"net"
 	"net/http"
 	"os"
 )
 
 type ConsoleServer struct {
-	Server    *http.Server
-	WSServer  *websocket.Server
-	Connector Connector
-	Mux       *http.ServeMux
-	Insecure  bool
-	TLSConfig *tls.Config
+	Server          *http.Server
+	WSServer        *websocket.Server
+	Resolver        Resolver
+	Mux             *http.ServeMux
+	Insecure        bool
+	TLSClientConfig *tls.Config
 }
 
-func NewConsoleServer(listenAddr string, insecure bool, tlsConfig *tls.Config, connector Connector) *ConsoleServer {
+func NewConsoleServer(listenAddr string, insecure bool, tlsServerConfig *tls.Config, tlsClientConfig *tls.Config, resolver Resolver) *ConsoleServer {
 
 	s := &ConsoleServer{
-		Mux:       http.NewServeMux(),
-		Connector: connector,
-		Insecure:  insecure,
-		TLSConfig: tlsConfig,
+		Mux:             http.NewServeMux(),
+		Resolver:        resolver,
+		Insecure:        insecure,
+		TLSClientConfig: tlsClientConfig,
 	}
 
 	s.WSServer = &websocket.Server{
@@ -58,7 +59,7 @@ func NewConsoleServer(listenAddr string, insecure bool, tlsConfig *tls.Config, c
 
 	s.Server = &http.Server{
 		Addr:      listenAddr,
-		TLSConfig: tlsConfig,
+		TLSConfig: tlsServerConfig,
 		Handler:   s.Mux,
 	}
 
@@ -98,31 +99,43 @@ func (s *ConsoleServer) handleClient(tenant *websocket.Conn) {
 			return
 		}
 
-		glog.V(1).Infof("Using token %s", token[0])
 		tokenValue = token[0]
 	}
-	compute, config, err := s.Connector.Associate(tenant, tokenValue)
+	if tokenValue == "" {
+		fmt.Fprintln(os.Stderr, "Need a non-empty token for console access")
+		return
+	}
+
+	glog.V(1).Infof("Resolving token %s", tokenValue)
+	service, err := s.Resolver.Resolve(tokenValue)
 	if err != nil {
 		tenant.Close()
 		fmt.Fprintln(os.Stderr, err)
 		return
 	}
-	glog.V(1).Infof("Associated to compute service %s",
-		config.Type)
+	glog.V(1).Infof("Resolver compute service %s at %s (insecure: %d)",
+		service.Type, service.Address, service.Insecure)
+
+	compute, err := net.Dial("tcp", service.Address)
+	if err != nil {
+		tenant.Close()
+		fmt.Fprintln(os.Stderr, err)
+		return
+	}
 
 	var client ConsoleClient
-	switch config.Type {
+	switch service.Type {
 	case SERVICE_VNC:
-		client = NewConsoleClientVNC(tenant, compute, config.Insecure, config.TLSConfig)
+		client = NewConsoleClientVNC(tenant, compute, service.Insecure, s.TLSClientConfig)
 
 	case SERVICE_SPICE:
-		client = NewConsoleClientSPICE(tenant, compute, config.Insecure, config.TLSConfig)
+		client = NewConsoleClientSPICE(tenant, compute, service.Insecure, s.TLSClientConfig)
 
 	case SERVICE_SERIAL:
-		client = NewConsoleClientSerial(tenant, compute, config.Insecure, config.TLSConfig)
+		client = NewConsoleClientSerial(tenant, compute, service.Insecure, s.TLSClientConfig)
 
 	default:
-		fmt.Fprintln(os.Stderr, "Unexpected service type '%s'", config.Type)
+		fmt.Fprintln(os.Stderr, "Unexpected service type '%s'", service.Type)
 	}
 
 	err = client.Proxy()
