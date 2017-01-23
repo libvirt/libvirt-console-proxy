@@ -26,5 +26,5 @@
 package libvirtconsoleproxy
 
 type ConsoleClient interface {
-	Proxy(*ServiceConfig) error
+	Proxy() error
 }

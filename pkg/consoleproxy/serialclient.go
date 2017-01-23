@@ -32,15 +32,19 @@ import (
 )
 
 type ConsoleClientSerial struct {
-	Tenant  net.Conn
-	Compute net.Conn
+	Tenant    net.Conn
+	Compute   net.Conn
+	Insecure  bool
+	TLSConfig *tls.Config
 }
 
-func NewConsoleClientSerial(tenant *websocket.Conn, compute net.Conn) *ConsoleClientSerial {
+func NewConsoleClientSerial(tenant *websocket.Conn, compute net.Conn, insecure bool, tlsConfig *tls.Config) *ConsoleClientSerial {
 
 	client := &ConsoleClientSerial{
-		Tenant:  tenant,
-		Compute: compute,
+		Tenant:    tenant,
+		Compute:   compute,
+		Insecure:  insecure,
+		TLSConfig: tlsConfig,
 	}
 
 	tenant.PayloadType = websocket.BinaryFrame
@@ -84,9 +88,9 @@ func (c *ConsoleClientSerial) proxyToTenant() error {
 	return err
 }
 
-func (c *ConsoleClientSerial) Proxy(config *ServiceConfig) error {
-	if !config.Insecure {
-		conn := tls.Client(c.Compute, config.TLSConfig)
+func (c *ConsoleClientSerial) Proxy() error {
+	if !c.Insecure {
+		conn := tls.Client(c.Compute, c.TLSConfig)
 
 		if err := conn.Handshake(); err != nil {
 			return err

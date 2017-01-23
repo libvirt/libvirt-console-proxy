@@ -34,15 +34,19 @@ import (
 )
 
 type ConsoleClientVNC struct {
-	Tenant  net.Conn
-	Compute net.Conn
+	Tenant    net.Conn
+	Compute   net.Conn
+	Insecure  bool
+	TLSConfig *tls.Config
 }
 
-func NewConsoleClientVNC(tenant *websocket.Conn, compute net.Conn) *ConsoleClientVNC {
+func NewConsoleClientVNC(tenant *websocket.Conn, compute net.Conn, insecure bool, tlsConfig *tls.Config) *ConsoleClientVNC {
 
 	client := &ConsoleClientVNC{
-		Tenant:  tenant,
-		Compute: compute,
+		Tenant:    tenant,
+		Compute:   compute,
+		Insecure:  insecure,
+		TLSConfig: tlsConfig,
 	}
 
 	tenant.PayloadType = websocket.BinaryFrame
@@ -119,7 +123,7 @@ func (c *ConsoleClientVNC) authComputeCheck() error {
 	return fmt.Errorf("Auth failed %s", string(reason))
 }
 
-func (c *ConsoleClientVNC) authComputeVeNCrypt(config *ServiceConfig) error {
+func (c *ConsoleClientVNC) authComputeVeNCrypt() error {
 	var major, minor uint8
 	if err := binary.Read(c.Compute, binary.BigEndian, &major); err != nil {
 		return err
@@ -175,7 +179,7 @@ func (c *ConsoleClientVNC) authComputeVeNCrypt(config *ServiceConfig) error {
 		return fmt.Errorf("Server rejected request for sub-auth %d", chooseAuth)
 	}
 
-	conn := tls.Client(c.Compute, config.TLSConfig)
+	conn := tls.Client(c.Compute, c.TLSConfig)
 
 	if err := conn.Handshake(); err != nil {
 		return err
@@ -196,7 +200,7 @@ func (c *ConsoleClientVNC) authComputeVeNCrypt(config *ServiceConfig) error {
 	return nil
 }
 
-func (c *ConsoleClientVNC) authCompute(config *ServiceConfig) error {
+func (c *ConsoleClientVNC) authCompute() error {
 	var numSecType uint8
 
 	if err := binary.Read(c.Compute, binary.BigEndian, &numSecType); err != nil {
@@ -212,14 +216,14 @@ func (c *ConsoleClientVNC) authCompute(config *ServiceConfig) error {
 	for _, secType := range secTypes {
 		switch secType {
 		case AUTH_NONE:
-			if !config.Insecure {
+			if !c.Insecure {
 				return fmt.Errorf("Auth type NONE not permitted without Insecure flag")
 			}
 			chooseAuth = secType
 			break
 
 		case AUTH_VENCRYPT:
-			if config.Insecure {
+			if c.Insecure {
 				return fmt.Errorf("Auth type VENCRYPT not permitted with Insecure flag")
 			}
 			chooseAuth = secType
@@ -245,7 +249,7 @@ func (c *ConsoleClientVNC) authCompute(config *ServiceConfig) error {
 		}
 
 	case AUTH_VENCRYPT:
-		if err := c.authComputeVeNCrypt(config); err != nil {
+		if err := c.authComputeVeNCrypt(); err != nil {
 			return err
 		}
 	}
@@ -324,7 +328,7 @@ func (c *ConsoleClientVNC) proxyToTenant() error {
 	return err
 }
 
-func (c *ConsoleClientVNC) Proxy(config *ServiceConfig) error {
+func (c *ConsoleClientVNC) Proxy() error {
 	if err := c.handshakeCompute(); err != nil {
 		c.Close()
 		return err
@@ -335,7 +339,7 @@ func (c *ConsoleClientVNC) Proxy(config *ServiceConfig) error {
 		return err
 	}
 
-	if err := c.authCompute(config); err != nil {
+	if err := c.authCompute(); err != nil {
 		c.Close()
 		return err
 	}

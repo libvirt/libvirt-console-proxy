@@ -33,15 +33,19 @@ import (
 )
 
 type ConsoleClientSPICE struct {
-	Tenant  net.Conn
-	Compute net.Conn
+	Tenant    net.Conn
+	Compute   net.Conn
+	Insecure  bool
+	TLSConfig *tls.Config
 }
 
-func NewConsoleClientSPICE(tenant *websocket.Conn, compute net.Conn) *ConsoleClientSPICE {
+func NewConsoleClientSPICE(tenant *websocket.Conn, compute net.Conn, insecure bool, tlsConfig *tls.Config) *ConsoleClientSPICE {
 
 	client := &ConsoleClientSPICE{
-		Tenant:  tenant,
-		Compute: compute,
+		Tenant:    tenant,
+		Compute:   compute,
+		Insecure:  insecure,
+		TLSConfig: tlsConfig,
 	}
 
 	tenant.PayloadType = websocket.BinaryFrame
@@ -87,9 +91,9 @@ func (c *ConsoleClientSPICE) proxyToTenant() error {
 	return err
 }
 
-func (c *ConsoleClientSPICE) Proxy(config *ServiceConfig) error {
-	if !config.Insecure {
-		conn := tls.Client(c.Compute, config.TLSConfig)
+func (c *ConsoleClientSPICE) Proxy() error {
+	if !c.Insecure {
+		conn := tls.Client(c.Compute, c.TLSConfig)
 
 		if err := conn.Handshake(); err != nil {
 			return err

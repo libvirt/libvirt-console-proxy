@@ -113,19 +113,19 @@ func (s *ConsoleServer) handleClient(tenant *websocket.Conn) {
 	var client ConsoleClient
 	switch config.Type {
 	case SERVICE_VNC:
-		client = NewConsoleClientVNC(tenant, compute)
+		client = NewConsoleClientVNC(tenant, compute, config.Insecure, config.TLSConfig)
 
 	case SERVICE_SPICE:
-		client = NewConsoleClientSPICE(tenant, compute)
+		client = NewConsoleClientSPICE(tenant, compute, config.Insecure, config.TLSConfig)
 
 	case SERVICE_SERIAL:
-		client = NewConsoleClientSerial(tenant, compute)
+		client = NewConsoleClientSerial(tenant, compute, config.Insecure, config.TLSConfig)
 
 	default:
 		fmt.Fprintln(os.Stderr, "Unexpected service type '%s'", config.Type)
 	}
 
-	err = client.Proxy(config)
+	err = client.Proxy()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return
