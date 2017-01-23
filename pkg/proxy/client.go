@@ -23,18 +23,8 @@
  *
  */
 
-package libvirtconsoleproxy
+package proxy
 
-type ServiceType string
-
-const (
-	SERVICE_VNC    = ServiceType("vnc")
-	SERVICE_SPICE  = ServiceType("spice")
-	SERVICE_SERIAL = ServiceType("serial")
-)
-
-type ServiceConfig struct {
-	Type     ServiceType `json:"type"`
-	Address  string      `json:"address"`
-	Insecure bool        `json:"insecure"`
+type ConsoleClient interface {
+	Proxy() error
 }

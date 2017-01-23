@@ -23,24 +23,25 @@
  *
  */
 
-package libvirtconsoleproxy
+package proxy
 
 import (
 	"crypto/tls"
+	"github.com/golang/glog"
 	"golang.org/x/net/websocket"
 	"net"
 )
 
-type ConsoleClientSerial struct {
+type ConsoleClientSPICE struct {
 	Tenant    net.Conn
 	Compute   net.Conn
 	Insecure  bool
 	TLSConfig *tls.Config
 }
 
-func NewConsoleClientSerial(tenant *websocket.Conn, compute net.Conn, insecure bool, tlsConfig *tls.Config) *ConsoleClientSerial {
+func NewConsoleClientSPICE(tenant *websocket.Conn, compute net.Conn, insecure bool, tlsConfig *tls.Config) *ConsoleClientSPICE {
 
-	client := &ConsoleClientSerial{
+	client := &ConsoleClientSPICE{
 		Tenant:    tenant,
 		Compute:   compute,
 		Insecure:  insecure,
@@ -52,43 +53,45 @@ func NewConsoleClientSerial(tenant *websocket.Conn, compute net.Conn, insecure b
 	return client
 }
 
-func (c *ConsoleClientSerial) proxyData(src net.Conn, dst net.Conn) error {
+func (c *ConsoleClientSPICE) proxyData(src net.Conn, dst net.Conn) error {
 	data := make([]byte, 64*1024)
-	pending := 0
+	var remaining []byte
 	for {
-		if pending == 0 {
-			var err error
-			pending, err = src.Read(data)
+		if len(remaining) == 0 {
+			got, err := src.Read(data)
 			if err != nil {
 				return err
 			}
-			if pending == 0 {
+			if got == 0 {
+				glog.V(1).Info("Got EOF")
 				return nil
 			}
+			remaining = data[0:got]
 		}
 
-		done, err := dst.Write(data[0:pending])
+		done, err := dst.Write(remaining)
 		if err != nil {
 			return err
 		}
-		data = data[done:]
-		pending -= done
+		remaining = remaining[done:]
 	}
 }
 
-func (c *ConsoleClientSerial) proxyToCompute() error {
+func (c *ConsoleClientSPICE) proxyToCompute() error {
 	err := c.proxyData(c.Tenant, c.Compute)
+	glog.V(1).Infof("Error proxy to compute %s", err)
 	c.Compute.Close()
 	return err
 }
 
-func (c *ConsoleClientSerial) proxyToTenant() error {
+func (c *ConsoleClientSPICE) proxyToTenant() error {
 	err := c.proxyData(c.Compute, c.Tenant)
+	glog.V(1).Infof("Error proxy to tenant %s", err)
 	c.Tenant.Close()
 	return err
 }
 
-func (c *ConsoleClientSerial) Proxy() error {
+func (c *ConsoleClientSPICE) Proxy() error {
 	if !c.Insecure {
 		conn := tls.Client(c.Compute, c.TLSConfig)
 

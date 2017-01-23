@@ -23,7 +23,7 @@
  *
  */
 
-package libvirtconsoleproxy
+package proxy
 
 import (
 	"crypto/tls"
