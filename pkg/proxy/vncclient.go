@@ -295,6 +295,7 @@ func (c *ConsoleClientVNC) Close() {
 func (c *ConsoleClientVNC) proxyData(src net.Conn, dst net.Conn) error {
 	data := make([]byte, 64*1024)
 	pending := 0
+	offset := 0
 	for {
 		if pending == 0 {
 			var err error
@@ -305,14 +306,15 @@ func (c *ConsoleClientVNC) proxyData(src net.Conn, dst net.Conn) error {
 			if pending == 0 {
 				return nil
 			}
+			offset = 0
 		}
 
-		done, err := dst.Write(data[0:pending])
+		done, err := dst.Write(data[offset:pending])
 		if err != nil {
 			return err
 		}
-		data = data[done:]
 		pending -= done
+		offset += done
 	}
 }
 
