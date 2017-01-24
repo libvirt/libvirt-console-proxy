@@ -29,6 +29,8 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -58,8 +60,7 @@ type ConsoleServerHost struct {
 
 type ConsoleServerToken struct {
 	Type     string
-	Host     string
-	Port     string
+	Address  string
 	Insecure bool
 	Domain   *ConsoleServerDomain
 }
@@ -122,6 +123,38 @@ type ConsoleServer struct {
 
 const tokenpath = "/consoleresolver/token/"
 
+func getListener(dom libvirtxml.Domain, gtype string, insecure bool, defaultHost string) (string, error) {
+	if dom.Devices == nil {
+		return "", errors.New("No devices present")
+	}
+
+	for _, graphics := range dom.Devices.Graphics {
+		if graphics.Type != gtype {
+			continue
+		}
+
+		host := defaultHost
+		if graphics.Listen != "" && graphics.Listen != "0.0.0.0" && graphics.Listen != "::" {
+			host = graphics.Listen
+		}
+
+		var port int
+		if graphics.Type == "spice" && !insecure {
+			port = graphics.TLSPort
+		} else {
+			port = graphics.Port
+		}
+		glog.V(1).Infof("Got port %d\n", port)
+		if graphics.Port == 0 || graphics.Port == -1 {
+			return "", errors.New("Missing port for graphics")
+		}
+
+		return net.JoinHostPort(host, fmt.Sprintf("%d", port)), nil
+	}
+
+	return "", fmt.Errorf("No graphics of type '%s' configured", gtype)
+}
+
 func (c *ConsoleServer) addDomain(host *ConsoleServerHost, dom *libvirt.Domain) error {
 	uuid, err := dom.GetUUIDString()
 	if err != nil {
@@ -177,23 +210,28 @@ func (c *ConsoleServer) addDomain(host *ConsoleServerHost, dom *libvirt.Domain) 
 			return err
 		}
 
-		domhost := host.Name
-		if console.Host != "" {
-			domhost = console.Host
-		}
 		insecure := false
 		if console.Insecure == "yes" {
 			insecure = true
 		}
+
+		addr, err := getListener(domcfg, console.Type, insecure, host.Name)
+		if err != nil {
+			return err
+		}
 		tokenInfo := &ConsoleServerToken{
 			Type:     console.Type,
-			Host:     domhost,
-			Port:     "5900",
+			Address:  addr,
 			Insecure: insecure,
 			Domain:   domain,
 		}
 
-		glog.V(1).Infof("Adding token %s for %s / %s on %s", string(token), name, uuid, domhost)
+		_, ok := c.Tokens[string(token)]
+		if ok {
+			return fmt.Errorf("Another console is already registered with token %s", token)
+		}
+
+		glog.V(1).Infof("Adding token %s for %s / %s on %s", string(token), name, uuid, addr)
 		c.Tokens[string(token)] = tokenInfo
 	}
 
@@ -308,7 +346,10 @@ func (c *ConsoleServer) openHost(host *ConsoleServerHost) error {
 			if ok {
 				c.removeDomain(host, domInfo)
 			}
-			c.addDomain(host, dom)
+			err = c.addDomain(host, dom)
+			if err != nil {
+				glog.V(1).Infof("Skipping domain due to error: %s", err)
+			}
 
 		case libvirt.DOMAIN_EVENT_STOPPED:
 			if ok {
@@ -383,7 +424,7 @@ func (s *ConsoleServer) handle(res http.ResponseWriter, req *http.Request) {
 
 	config := &proxy.ServiceConfig{
 		Type:     proxy.ServiceType(info.Type),
-		Address:  net.JoinHostPort(info.Host, info.Port),
+		Address:  info.Address,
 		Insecure: info.Insecure,
 	}
 
