@@ -86,7 +86,7 @@ type ConsoleServer struct {
 
 const tokenpath = "/consoleresolver/token/"
 
-func getListener(dom libvirtxml.Domain, gtype string, insecure bool, defaultHost string) (string, error) {
+func getListener(dom libvirtxml.Domain, gtype string, insecure bool, consoleHost, defaultHost string) (string, error) {
 	if dom.Devices == nil {
 		return "", errors.New("No devices present")
 	}
@@ -96,9 +96,15 @@ func getListener(dom libvirtxml.Domain, gtype string, insecure bool, defaultHost
 			continue
 		}
 
-		host := defaultHost
-		if graphics.Listen != "" && graphics.Listen != "0.0.0.0" && graphics.Listen != "::" {
-			host = graphics.Listen
+		var host string
+		if consoleHost != "" {
+			host = consoleHost
+		} else {
+			if graphics.Listen != "" && graphics.Listen != "0.0.0.0" && graphics.Listen != "::" {
+				host = graphics.Listen
+			} else {
+				host = defaultHost
+			}
 		}
 
 		var port int
@@ -171,7 +177,7 @@ func (c *ConsoleServer) addDomain(host *ConsoleServerHost, dom *libvirt.Domain) 
 			insecure = true
 		}
 
-		addr, err := getListener(domcfg, console.Type, insecure, host.Name)
+		addr, err := getListener(domcfg, console.Type, insecure, console.Host, host.Name)
 		if err != nil {
 			return err
 		}
