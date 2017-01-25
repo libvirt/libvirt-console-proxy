@@ -3,6 +3,7 @@ import:
 - package: github.com/golang/glog
 - package: github.com/libvirt/libvirt-go
 - package: github.com/libvirt/libvirt-go-xml
+- package: github.com/spf13/pflag
 - package: golang.org/x/net
   subpackages:
   - context

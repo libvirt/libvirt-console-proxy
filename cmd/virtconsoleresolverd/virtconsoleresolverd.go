@@ -31,33 +31,25 @@ import (
 	"flag"
 	"fmt"
 	"github.com/golang/glog"
+	"github.com/spf13/pflag"
 	"io/ioutil"
 	"libvirt.org/libvirt-console-proxy/pkg/resolver"
 	"os"
 )
 
-type stringList []string
-
-func (i *stringList) String() string {
-	return "my string representation"
-}
-
-func (i *stringList) Set(value string) error {
-	*i = append(*i, value)
-	return nil
-}
-
 var (
-	listeninsecure = flag.Bool("listen-insecure", false,
+	listeninsecure = pflag.Bool("listen-insecure", false,
 		"Run public listener without TLS encryption")
-	listenaddr = flag.String("listen-addr", "0.0.0.0:80",
+	listenaddr = pflag.String("listen-addr", "0.0.0.0:80",
 		"TCP address and port to listen on")
-	listentlscert = flag.String("listen-tls-cert", "/etc/pki/libvirt-console-proxy/server-cert.pem",
+	listentlscert = pflag.String("listen-tls-cert", "/etc/pki/libvirt-console-proxy/server-cert.pem",
 		"Path to TLS public server cert PEM file")
-	listentlskey = flag.String("listen-tls-key", "/etc/pki/libvirt-console-proxy/server-key.pem",
+	listentlskey = pflag.String("listen-tls-key", "/etc/pki/libvirt-console-proxy/server-key.pem",
 		"Path to TLS public server key PEM file")
-	listentlsca = flag.String("listen-tls-ca", "/etc/pki/libvirt-console-proxy/server-ca.pem",
+	listentlsca = pflag.String("listen-tls-ca", "/etc/pki/libvirt-console-proxy/server-ca.pem",
 		"Path to TLS public server CA cert PEM file")
+	connect = pflag.StringArray("connect", []string{"qemu:///system"},
+		"Libvirt URIs to connect to (can be repeated)")
 )
 
 func loadTLSConfig(certFile, keyFile, caFile string, client bool) (*tls.Config, error) {
@@ -94,10 +86,10 @@ func loadTLSConfig(certFile, keyFile, caFile string, client bool) (*tls.Config, 
 }
 
 func main() {
-	var connect stringList
-	flag.Var(&connect, "connect",
-		"Libvirt URIs to connect to (can be repeated)")
-	flag.Parse()
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	pflag.Parse()
+	// Convince glog that we really have parsed CLI
+	flag.CommandLine.Parse([]string{})
 
 	var listentlsconfig *tls.Config
 	if !*listeninsecure {
@@ -110,7 +102,7 @@ func main() {
 	}
 
 	glog.V(1).Info("Starting console server")
-	server, err := proxy.NewConsoleServer(*listenaddr, *listeninsecure, listentlsconfig, connect)
+	server, err := proxy.NewConsoleServer(*listenaddr, *listeninsecure, listentlsconfig, *connect)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

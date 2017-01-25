@@ -31,6 +31,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/golang/glog"
+	"github.com/spf13/pflag"
 	"io/ioutil"
 	"libvirt.org/libvirt-console-proxy/pkg/proxy"
 	"os"
@@ -38,37 +39,37 @@ import (
 )
 
 var (
-	listeninsecure = flag.Bool("listen-insecure", false,
+	listeninsecure = pflag.Bool("listen-insecure", false,
 		"Run public listener without TLS encryption")
-	listenaddr = flag.String("listen-addr", "0.0.0.0:80",
+	listenaddr = pflag.String("listen-addr", "0.0.0.0:80",
 		"TCP address and port to listen on")
-	listentlscert = flag.String("listen-tls-cert", "/etc/pki/libvirt-console-proxy/server-cert.pem",
+	listentlscert = pflag.String("listen-tls-cert", "/etc/pki/libvirt-console-proxy/server-cert.pem",
 		"Path to TLS public server cert PEM file")
-	listentlskey = flag.String("listen-tls-key", "/etc/pki/libvirt-console-proxy/server-key.pem",
+	listentlskey = pflag.String("listen-tls-key", "/etc/pki/libvirt-console-proxy/server-key.pem",
 		"Path to TLS public server key PEM file")
-	listentlsca = flag.String("listen-tls-ca", "/etc/pki/libvirt-console-proxy/server-ca.pem",
+	listentlsca = pflag.String("listen-tls-ca", "/etc/pki/libvirt-console-proxy/server-ca.pem",
 		"Path to TLS public server CA cert PEM file")
 
-	connectinsecure = flag.Bool("connect-insecure", false,
+	connectinsecure = pflag.Bool("connect-insecure", false,
 		"Allow running internal connection without TLS encryption")
-	connecttlscert = flag.String("connect-tls-cert", "/etc/pki/libvirt-console-proxy/client-cert.pem",
+	connecttlscert = pflag.String("connect-tls-cert", "/etc/pki/libvirt-console-proxy/client-cert.pem",
 		"Path to TLS internal client cert PEM file")
-	connecttlskey = flag.String("connect-tls-key", "/etc/pki/libvirt-console-proxy/client-key.pem",
+	connecttlskey = pflag.String("connect-tls-key", "/etc/pki/libvirt-console-proxy/client-key.pem",
 		"Path to TLS internal client key PEM file")
-	connecttlsca = flag.String("connect-tls-ca", "/etc/pki/libvirt-console-proxy/client-ca.pem",
+	connecttlsca = pflag.String("connect-tls-ca", "/etc/pki/libvirt-console-proxy/client-ca.pem",
 		"Path to TLS internal client CA PEM file")
 
-	resolvermode = flag.String("resolver-mode", "builtin",
+	resolvermode = pflag.String("resolver-mode", "builtin",
 		"Type of resolver to use 'builtin' or 'external'")
-	resolvertokens = flag.String("resolver-tokens", "/etc/libvirt/consoleproxy/tokens.json",
+	resolvertokens = pflag.String("resolver-tokens", "/etc/libvirt/consoleproxy/tokens.json",
 		"Path to token file for builin resolver")
-	resolveruri = flag.String("resolver-uri", "https://127.0.0.1:8081/consoleresolver/",
+	resolveruri = pflag.String("resolver-uri", "https://127.0.0.1:8081/consoleresolver/",
 		"URI base for the external resolver REST service")
-	resolvertlscert = flag.String("resolver-tls-cert", "/etc/pki/libvirt-console-proxy/client-cert.pem",
+	resolvertlscert = pflag.String("resolver-tls-cert", "/etc/pki/libvirt-console-proxy/client-cert.pem",
 		"Path to TLS internal client cert PEM file")
-	resolvertlskey = flag.String("resolver-tls-key", "/etc/pki/libvirt-console-proxy/client-key.pem",
+	resolvertlskey = pflag.String("resolver-tls-key", "/etc/pki/libvirt-console-proxy/client-key.pem",
 		"Path to TLS internal client key PEM file")
-	resolvertlsca = flag.String("resolver-tls-ca", "/etc/pki/libvirt-console-proxy/client-ca.pem",
+	resolvertlsca = pflag.String("resolver-tls-ca", "/etc/pki/libvirt-console-proxy/client-ca.pem",
 		"Path to TLS internal client CA PEM file")
 )
 
@@ -106,7 +107,10 @@ func loadTLSConfig(certFile, keyFile, caFile string, client bool) (*tls.Config, 
 }
 
 func main() {
-	flag.Parse()
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	pflag.Parse()
+	// Convince glog that we really have parsed CLI
+	flag.CommandLine.Parse([]string{})
 
 	var err error
 	var connecttlsconfig *tls.Config
