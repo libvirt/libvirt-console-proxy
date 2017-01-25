@@ -23,7 +23,7 @@
  *
  */
 
-package proxy
+package resolver
 
 import (
 	"crypto/tls"

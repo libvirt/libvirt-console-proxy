@@ -102,7 +102,7 @@ func main() {
 	}
 
 	glog.V(1).Info("Starting console server")
-	server, err := proxy.NewConsoleServer(*listenaddr, *listeninsecure, listentlsconfig, *connect)
+	server, err := resolver.NewConsoleServer(*listenaddr, *listeninsecure, listentlsconfig, *connect)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
