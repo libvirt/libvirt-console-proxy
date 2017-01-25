@@ -65,8 +65,6 @@ type ConsoleServerToken struct {
 	Domain   *ConsoleServerDomain
 }
 
-const XMLNS = "http://libvirt.org/schemas/console-proxy/1.0"
-
 func eventloop() {
 	for {
 		libvirt.EventRunDefaultImpl()
@@ -76,41 +74,6 @@ func eventloop() {
 func init() {
 	libvirt.EventRegisterDefaultImpl()
 	go eventloop()
-}
-
-/*
- * The libvirt metadata is in namespace
- *
- *   xmlns:lcp="http://libvirt.org/schemas/console-proxy/1.0"
- *
- * It can represent multiple consoles per guest domain. Each exposed
- * console must provide a globally unique secret token value. This
- * token is identified by a UUID that refers to a libvirt secret
- * object storing the actual token value.
- *
- * The type is one of "vnc", "spice", or "serial"
- *
- * The host attribute is optional and if omitted the result of the
- * virConnectGetHostname() method will be used.
- *
- * The insecure attribute is optional and defaults to "no" if omitted
- *
- * <lcp:consoles>
- *   <lcp:console type="vnc" token="bcbb4165-0a92-4a9c-a66d-9361ff4a45d6" insecure="yes" host="192.168.122.2"/>
- *   <lcp:console type="spice" token="55806c7d-8e93-456f-829b-607d8c198367" host="192.168.122.2"/>
- * </lcp:consoles>
- */
-
-type ConsoleServerProxyMetadataConsole struct {
-	Token    string `xml:"token,attr"`
-	Type     string `xml:"type,attr"`
-	Host     string `xml:"host,attr,omitempty"`
-	Insecure string `xml:"insecure,attr"`
-}
-
-type ConsoleServerProxyMetadata struct {
-	XMLName  xml.Name                            `xml:"consoles"`
-	Consoles []ConsoleServerProxyMetadataConsole `xml:"console"`
 }
 
 type ConsoleServer struct {
@@ -179,14 +142,7 @@ func (c *ConsoleServer) addDomain(host *ConsoleServerHost, dom *libvirt.Domain) 
 		return err
 	}
 
-	metaxml, err := dom.GetMetadata(libvirt.DOMAIN_METADATA_ELEMENT, XMLNS, libvirt.DOMAIN_AFFECT_LIVE)
-	if err != nil {
-		return err
-	}
-
-	glog.V(1).Infof("Got metadata %s", metaxml)
-	var meta ConsoleServerProxyMetadata
-	err = xml.Unmarshal([]byte(metaxml), &meta)
+	meta, err := GetMetadata(dom)
 	if err != nil {
 		return err
 	}
