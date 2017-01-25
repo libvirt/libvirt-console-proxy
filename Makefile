@@ -1,7 +1,7 @@
 
-CMDS := virtconsoleproxyd virtconsoleresolverd
+CMDS := virtconsoleproxyd virtconsoleresolverd virtconsoleresolveradm
 
-GOSRC := $(wildcard cmd/*/*.go) $(wildcard pkg/*/*.go)
+GOSRC := $(wildcard cmd/*/*.go) $(wildcard cmd/*/*/*.go) $(wildcard pkg/*/*.go)
 
 all: $(CMDS:%=build/%)
 
@@ -19,6 +19,12 @@ build/virtconsoleproxyd: cmd/virtconsoleproxyd/virtconsoleproxyd.go $(GOSRC) gli
 	cd libvirt-console-proxy && go build -o `pwd`/$@ $<
 
 build/virtconsoleresolverd: cmd/virtconsoleresolverd/virtconsoleresolverd.go $(GOSRC) glide.lock
+	mkdir -p build/src/libvirt.org && \
+	GOPATH=`pwd`/build && \
+	cd build/src/libvirt.org && (test -e libvirt-console-proxy || ln -s ../../.. libvirt-console-proxy ) && \
+	cd libvirt-console-proxy && go build -o `pwd`/$@ $<
+
+build/virtconsoleresolveradm: cmd/virtconsoleresolveradm/main.go $(GOSRC) glide.lock
 	mkdir -p build/src/libvirt.org && \
 	GOPATH=`pwd`/build && \
 	cd build/src/libvirt.org && (test -e libvirt-console-proxy || ln -s ../../.. libvirt-console-proxy ) && \
