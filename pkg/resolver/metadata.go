@@ -50,8 +50,10 @@ import (
  * The insecure attribute is optional and defaults to "no" if omitted
  *
  * <lcp:consoles>
- *   <lcp:console type="vnc" token="bcbb4165-0a92-4a9c-a66d-9361ff4a45d6" insecure="yes" host="192.168.122.2"/>
- *   <lcp:console type="spice" token="55806c7d-8e93-456f-829b-607d8c198367" host="192.168.122.2"/>
+ *   <lcp:console type="vnc" index="0" token="bcbb4165-0a92-4a9c-a66d-9361ff4a45d6" insecure="yes" host="192.168.122.2"/>
+ *   <lcp:console type="spice" index="0" token="55806c7d-8e93-456f-829b-607d8c198367" host="192.168.122.2"/>
+ *   <lcp:console type="serial" index="0" token="55806c7d-8e93-456f-829b-607d8c198367" host="192.168.122.2"/>
+ *   <lcp:console type="console" index="0" token="55806c7d-8e93-456f-829b-607d8c198367" host="192.168.122.2"/>
  * </lcp:consoles>
  */
 
@@ -61,6 +63,7 @@ const xmlprefix = "lcp"
 type ConsoleServerProxyMetadataConsole struct {
 	Token    string `xml:"token,attr"`
 	Type     string `xml:"type,attr"`
+	Index    int    `xml:"port,attr"`
 	Host     string `xml:"host,attr,omitempty"`
 	Insecure string `xml:"insecure,attr"`
 }
