@@ -63,7 +63,6 @@ func NewConsoleServer(listenAddr string, insecure bool, tlsServerConfig *tls.Con
 		Handler:   s.Mux,
 	}
 
-	s.Mux.Handle("/", s.WSServer)
 	s.Mux.Handle("/websockify", s.WSServer)
 
 	return s
