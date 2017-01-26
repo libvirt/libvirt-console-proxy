@@ -372,6 +372,21 @@ func (s *ConsoleServer) Serve() error {
 	return nil
 }
 
+func getServiceType(porttype string) (proxy.ServiceType, error) {
+	switch porttype {
+	case "spice":
+		return proxy.SERVICE_SPICE, nil
+	case "vnc":
+		return proxy.SERVICE_VNC, nil
+	case "serial":
+		return proxy.SERVICE_SERIAL, nil
+	case "console":
+		return proxy.SERVICE_SERIAL, nil
+	}
+
+	return "", fmt.Errorf("Unexpected port type %s", porttype)
+}
+
 func (s *ConsoleServer) handle(res http.ResponseWriter, req *http.Request) {
 	token := strings.TrimPrefix(req.URL.Path, tokenpath)
 
@@ -384,8 +399,13 @@ func (s *ConsoleServer) handle(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	svctype, err := getServiceType(info.Type)
+	if err != nil {
+		glog.V(1).Info(err)
+		http.Error(res, "Expected port type", http.StatusInternalServerError)
+	}
 	config := &proxy.ServiceConfig{
-		Type:     proxy.ServiceType(info.Type),
+		Type:     svctype,
 		Address:  info.Address,
 		Insecure: info.Insecure,
 	}
