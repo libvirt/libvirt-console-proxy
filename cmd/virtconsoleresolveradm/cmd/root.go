@@ -34,6 +34,7 @@ var RootCmd = &cobra.Command{
 	Short: "Libvirt console resolver admin",
 	Long:  "Libvirt console resolver administration tool",
 	Run:   func(cmd *cobra.Command, args []string) {},
+	Args:  cobra.MinimumNArgs(1),
 }
 
 var (
