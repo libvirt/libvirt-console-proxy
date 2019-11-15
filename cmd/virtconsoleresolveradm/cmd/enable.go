@@ -174,14 +174,14 @@ func doEnable(cmd *cobra.Command, args []string) {
 	}
 
 	for idx, chardev := range domcfg.Devices.Serials {
-		if chardev.Type == "tcp" {
+		if chardev.Source.TCP != nil {
 			meta.Consoles = append(meta.Consoles,
 				createConsole("serial", idx, conn, domname, domuuid))
 		}
 	}
 
 	for idx, chardev := range domcfg.Devices.Consoles {
-		if chardev.Type == "tcp" {
+		if chardev.Source.TCP != nil {
 			meta.Consoles = append(meta.Consoles,
 				createConsole("console", idx, conn, domname, domuuid))
 		}
