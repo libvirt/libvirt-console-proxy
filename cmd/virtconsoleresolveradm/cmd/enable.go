@@ -49,8 +49,8 @@ var (
 )
 
 func createConsole(ctype string, index int, conn *libvirt.Connect, domname, domuuid string) resolver.ConsoleServerProxyMetadataConsole {
-	tokenID := uuid.NewV4()
-	tokenValue := uuid.NewV4()
+	tokenID := uuid.Must(uuid.NewV4())
+	tokenValue := uuid.Must(uuid.NewV4())
 	console := resolver.ConsoleServerProxyMetadataConsole{
 		Token:    tokenID.String(),
 		Type:     ctype,
