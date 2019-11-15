@@ -164,15 +164,13 @@ func doEnable(cmd *cobra.Command, args []string) {
 	meta = &resolver.ConsoleServerProxyMetadata{}
 
 	for _, graphics := range domcfg.Devices.Graphics {
-		switch graphics.Type {
-		case "spice":
+		if graphics.Spice != nil {
 			meta.Consoles = append(meta.Consoles,
 				createConsole("spice", 0, conn, domname, domuuid))
-		case "vnc":
+		} else if graphics.VNC != nil {
 			meta.Consoles = append(meta.Consoles,
 				createConsole("vnc", 0, conn, domname, domuuid))
 		}
-
 	}
 
 	for idx, chardev := range domcfg.Devices.Serials {

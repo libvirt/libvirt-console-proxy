@@ -86,13 +86,19 @@ type ConsoleServer struct {
 
 const tokenpath = "/consoleresolver/token/"
 
+func isListenAddress(listen string) bool {
+	return listen != "" && listen != "0.0.0.0" && listen != "::"
+}
+
 func getListener(dom libvirtxml.Domain, gtype string, insecure bool, consoleHost, defaultHost string) (string, error) {
 	if dom.Devices == nil {
 		return "", errors.New("No devices present")
 	}
 
 	for _, graphics := range dom.Devices.Graphics {
-		if graphics.Type != gtype {
+		if gtype == "vnc" && graphics.VNC != nil {
+		} else if gtype == "spice" && graphics.Spice != nil {
+		} else {
 			continue
 		}
 
@@ -100,21 +106,25 @@ func getListener(dom libvirtxml.Domain, gtype string, insecure bool, consoleHost
 		if consoleHost != "" {
 			host = consoleHost
 		} else {
-			if graphics.Listen != "" && graphics.Listen != "0.0.0.0" && graphics.Listen != "::" {
-				host = graphics.Listen
+			if graphics.VNC != nil && isListenAddress(graphics.VNC.Listen) {
+				host = graphics.VNC.Listen
+			} else if graphics.Spice != nil && isListenAddress(graphics.Spice.Listen) {
+				host = graphics.Spice.Listen
 			} else {
 				host = defaultHost
 			}
 		}
 
 		var port int
-		if graphics.Type == "spice" && !insecure {
-			port = graphics.TLSPort
-		} else {
-			port = graphics.Port
+		if graphics.Spice != nil && !insecure {
+			port = graphics.Spice.TLSPort
+		} else if graphics.Spice != nil {
+			port = graphics.Spice.Port
+		} else if graphics.VNC != nil {
+			port = graphics.VNC.Port
 		}
 		glog.V(1).Infof("Got port %d\n", port)
-		if graphics.Port == 0 || graphics.Port == -1 {
+		if port == 0 || port == -1 {
 			return "", errors.New("Missing port for graphics")
 		}
 
