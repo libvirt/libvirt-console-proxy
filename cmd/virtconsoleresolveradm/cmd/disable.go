@@ -40,14 +40,10 @@ var disableCmd = &cobra.Command{
 	Short: "Disable consoles for a domain",
 	Long:  "Disable access to consoles for a domain",
 	Run:   doDisable,
+	Args:  cobra.ExactArgs(1),
 }
 
 func doDisable(cmd *cobra.Command, args []string) {
-	if len(args) != 1 {
-		fmt.Fprintln(os.Stderr, "Missing domain name/uuid")
-		os.Exit(1)
-	}
-
 	conn, err := libvirt.NewConnect(connect)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Cannot connect to hypervisor '%s': %s\n",

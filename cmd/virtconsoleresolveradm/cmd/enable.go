@@ -43,6 +43,7 @@ var (
 		Short: "Enable consoles for a domain",
 		Long:  "Enable consoles for a domain",
 		Run:   doEnable,
+		Args:  cobra.ExactArgs(1),
 	}
 	insecure *bool
 	host     *string
@@ -99,11 +100,6 @@ func createConsole(ctype string, index int, conn *libvirt.Connect, domname, domu
 }
 
 func doEnable(cmd *cobra.Command, args []string) {
-	if len(args) != 1 {
-		fmt.Fprintln(os.Stderr, "Missing domain name/uuid")
-		os.Exit(1)
-	}
-
 	conn, err := libvirt.NewConnect(connect)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Cannot connect to hypervisor '%s': %s\n",
