@@ -29,8 +29,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/libvirt/libvirt-go"
 	"github.com/spf13/cobra"
+	"libvirt.org/libvirt-go"
 
 	"libvirt.org/libvirt-console-proxy/pkg/resolver"
 )

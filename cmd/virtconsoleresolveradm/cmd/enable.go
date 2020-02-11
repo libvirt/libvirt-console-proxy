@@ -29,10 +29,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/libvirt/libvirt-go"
-	"github.com/libvirt/libvirt-go-xml"
 	"github.com/satori/go.uuid"
 	"github.com/spf13/cobra"
+	"libvirt.org/libvirt-go"
+	"libvirt.org/libvirt-go-xml"
 
 	"libvirt.org/libvirt-console-proxy/pkg/resolver"
 )

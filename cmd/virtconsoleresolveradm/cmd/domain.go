@@ -26,9 +26,10 @@
 package cmd
 
 import (
-	"github.com/libvirt/libvirt-go"
 	"regexp"
 	"strconv"
+
+	"libvirt.org/libvirt-go"
 )
 
 func GetDomain(conn *libvirt.Connect, identifier string) (*libvirt.Domain, error) {

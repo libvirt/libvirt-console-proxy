@@ -38,8 +38,8 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/libvirt/libvirt-go"
-	"github.com/libvirt/libvirt-go-xml"
+	"libvirt.org/libvirt-go"
+	"libvirt.org/libvirt-go-xml"
 
 	"libvirt.org/libvirt-console-proxy/pkg/proxy"
 )
