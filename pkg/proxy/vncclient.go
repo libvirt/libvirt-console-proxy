@@ -179,6 +179,7 @@ func (c *ConsoleClientVNC) authComputeVeNCrypt() error {
 		return fmt.Errorf("Server rejected request for sub-auth %d", chooseAuth)
 	}
 
+	c.TLSConfig.ServerName, _, _ = net.SplitHostPort(c.Compute.RemoteAddr().String())
 	conn := tls.Client(c.Compute, c.TLSConfig)
 
 	if err := conn.Handshake(); err != nil {
