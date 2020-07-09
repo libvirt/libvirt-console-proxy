@@ -26,25 +26,20 @@
 package proxy
 
 import (
-	"crypto/tls"
 	"golang.org/x/net/websocket"
 	"net"
 )
 
 type ConsoleClientSerial struct {
-	Tenant    net.Conn
-	Compute   net.Conn
-	Insecure  bool
-	TLSConfig *tls.Config
+	Tenant  net.Conn
+	Compute net.Conn
 }
 
-func NewConsoleClientSerial(tenant *websocket.Conn, compute net.Conn, insecure bool, tlsConfig *tls.Config) *ConsoleClientSerial {
+func NewConsoleClientSerial(tenant *websocket.Conn, compute net.Conn) *ConsoleClientSerial {
 
 	client := &ConsoleClientSerial{
-		Tenant:    tenant,
-		Compute:   compute,
-		Insecure:  insecure,
-		TLSConfig: tlsConfig,
+		Tenant:  tenant,
+		Compute: compute,
 	}
 
 	tenant.PayloadType = websocket.BinaryFrame
@@ -89,16 +84,6 @@ func (c *ConsoleClientSerial) proxyToTenant() error {
 }
 
 func (c *ConsoleClientSerial) Proxy() error {
-	if !c.Insecure {
-		conn := tls.Client(c.Compute, c.TLSConfig)
-
-		if err := conn.Handshake(); err != nil {
-			return err
-		}
-
-		c.Compute = conn
-	}
-
 	go c.proxyToTenant()
 
 	return c.proxyToCompute()

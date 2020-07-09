@@ -26,26 +26,21 @@
 package proxy
 
 import (
-	"crypto/tls"
 	"github.com/golang/glog"
 	"golang.org/x/net/websocket"
 	"net"
 )
 
 type ConsoleClientSPICE struct {
-	Tenant    net.Conn
-	Compute   net.Conn
-	Insecure  bool
-	TLSConfig *tls.Config
+	Tenant  net.Conn
+	Compute net.Conn
 }
 
-func NewConsoleClientSPICE(tenant *websocket.Conn, compute net.Conn, insecure bool, tlsConfig *tls.Config) *ConsoleClientSPICE {
+func NewConsoleClientSPICE(tenant *websocket.Conn, compute net.Conn) *ConsoleClientSPICE {
 
 	client := &ConsoleClientSPICE{
-		Tenant:    tenant,
-		Compute:   compute,
-		Insecure:  insecure,
-		TLSConfig: tlsConfig,
+		Tenant:  tenant,
+		Compute: compute,
 	}
 
 	tenant.PayloadType = websocket.BinaryFrame
@@ -92,16 +87,6 @@ func (c *ConsoleClientSPICE) proxyToTenant() error {
 }
 
 func (c *ConsoleClientSPICE) Proxy() error {
-	if !c.Insecure {
-		conn := tls.Client(c.Compute, c.TLSConfig)
-
-		if err := conn.Handshake(); err != nil {
-			return err
-		}
-
-		c.Compute = conn
-	}
-
 	go c.proxyToTenant()
 
 	return c.proxyToCompute()

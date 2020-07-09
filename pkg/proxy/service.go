@@ -34,7 +34,8 @@ const (
 )
 
 type ServiceConfig struct {
-	Type     ServiceType `json:"type"`
-	Address  string      `json:"address"`
-	Insecure bool        `json:"insecure"`
+	Type      ServiceType `json:"type"`
+	Address   string      `json:"address"`
+	Insecure  bool        `json:"insecure"`
+	TLSTunnel bool        `json:"tlsTunnel"`
 }

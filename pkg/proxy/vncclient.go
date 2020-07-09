@@ -36,16 +36,16 @@ import (
 type ConsoleClientVNC struct {
 	Tenant    net.Conn
 	Compute   net.Conn
-	Insecure  bool
+	Service   *ServiceConfig
 	TLSConfig *tls.Config
 }
 
-func NewConsoleClientVNC(tenant *websocket.Conn, compute net.Conn, insecure bool, tlsConfig *tls.Config) *ConsoleClientVNC {
+func NewConsoleClientVNC(tenant *websocket.Conn, compute net.Conn, service *ServiceConfig, tlsConfig *tls.Config) *ConsoleClientVNC {
 
 	client := &ConsoleClientVNC{
 		Tenant:    tenant,
 		Compute:   compute,
-		Insecure:  insecure,
+		Service:   service,
 		TLSConfig: tlsConfig,
 	}
 
@@ -191,7 +191,7 @@ func (c *ConsoleClientVNC) authComputeVeNCrypt() error {
 	switch chooseAuth {
 	case SUBAUTH_VENCRYPT_X509NONE:
 		if err := c.authComputeCheck(); err != nil {
-			return nil
+			return err
 		}
 
 	default:
@@ -217,14 +217,14 @@ func (c *ConsoleClientVNC) authCompute() error {
 	for _, secType := range secTypes {
 		switch secType {
 		case AUTH_NONE:
-			if !c.Insecure {
-				return fmt.Errorf("Auth type NONE not permitted without Insecure flag")
+			if !c.Service.Insecure && !c.Service.TLSTunnel {
+				return fmt.Errorf("Auth type NONE not permitted without Insecure flag or tlsTunnel flag")
 			}
 			chooseAuth = secType
 			break
 
 		case AUTH_VENCRYPT:
-			if c.Insecure {
+			if c.Service.Insecure {
 				return fmt.Errorf("Auth type VENCRYPT not permitted with Insecure flag")
 			}
 			chooseAuth = secType
@@ -246,7 +246,7 @@ func (c *ConsoleClientVNC) authCompute() error {
 	switch chooseAuth {
 	case AUTH_NONE:
 		if err := c.authComputeCheck(); err != nil {
-			return nil
+			return err
 		}
 
 	case AUTH_VENCRYPT:

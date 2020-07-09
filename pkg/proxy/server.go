@@ -112,10 +112,17 @@ func (s *ConsoleServer) handleClient(tenant *websocket.Conn) {
 		fmt.Fprintln(os.Stderr, err)
 		return
 	}
-	glog.V(1).Infof("Resolver compute service %s at %s (insecure: %d)",
-		service.Type, service.Address, service.Insecure)
+	glog.V(1).Infof("Resolver compute service %s at %s (insecure: %t, tlsTunnel: %t)",
+		service.Type, service.Address, service.Insecure, service.TLSTunnel)
 
-	compute, err := net.Dial("tcp", service.Address)
+	var compute net.Conn
+	if !service.Insecure && !(service.Type == SERVICE_VNC && !service.TLSTunnel) {
+		compute, err = tls.Dial("tcp", service.Address, s.TLSClientConfig)
+	} else if service.Insecure && service.TLSTunnel {
+		err = fmt.Errorf("Incompatible resolver service security (insecure: true, tlsTunnel: true)")
+	} else {
+		compute, err = net.Dial("tcp", service.Address)
+	}
 	if err != nil {
 		tenant.Close()
 		fmt.Fprintln(os.Stderr, err)
@@ -125,13 +132,13 @@ func (s *ConsoleServer) handleClient(tenant *websocket.Conn) {
 	var client ConsoleClient
 	switch service.Type {
 	case SERVICE_VNC:
-		client = NewConsoleClientVNC(tenant, compute, service.Insecure, s.TLSClientConfig)
+		client = NewConsoleClientVNC(tenant, compute, service, s.TLSClientConfig)
 
 	case SERVICE_SPICE:
-		client = NewConsoleClientSPICE(tenant, compute, service.Insecure, s.TLSClientConfig)
+		client = NewConsoleClientSPICE(tenant, compute)
 
 	case SERVICE_SERIAL:
-		client = NewConsoleClientSerial(tenant, compute, service.Insecure, s.TLSClientConfig)
+		client = NewConsoleClientSerial(tenant, compute)
 
 	default:
 		fmt.Fprintln(os.Stderr, "Unexpected service type '%s'", service.Type)
