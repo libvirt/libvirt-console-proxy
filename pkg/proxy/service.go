@@ -38,4 +38,5 @@ type ServiceConfig struct {
 	Address   string      `json:"address"`
 	Insecure  bool        `json:"insecure"`
 	TLSTunnel bool        `json:"tlsTunnel"`
+	Password  string      `json:"password"`
 }

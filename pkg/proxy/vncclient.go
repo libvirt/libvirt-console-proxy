@@ -26,10 +26,12 @@
 package proxy
 
 import (
+	"crypto/des"
 	"crypto/tls"
 	"encoding/binary"
 	"fmt"
 	"golang.org/x/net/websocket"
+	"math/bits"
 	"net"
 )
 
@@ -91,6 +93,7 @@ func (c *ConsoleClientVNC) handshakeTenant() error {
 var (
 	AUTH_UNKNOWN  = uint8(0)
 	AUTH_NONE     = uint8(1)
+	AUTH_PASSWORD = uint8(2)
 	AUTH_VENCRYPT = uint8(19)
 
 	SUBAUTH_VENCRYPT_UNKNOWN  = uint32(0)
@@ -121,6 +124,47 @@ func (c *ConsoleClientVNC) authComputeCheck() error {
 	}
 
 	return fmt.Errorf("Auth failed %s", string(reason))
+}
+
+func (c *ConsoleClientVNC) authComputePassword() error {
+	// See https://tools.ietf.org/html/rfc6143#section-7.2.2
+	challenge := make([]byte, 16)
+	if err := binary.Read(c.Compute, binary.BigEndian, challenge); err != nil {
+		return err
+	}
+
+	password := c.Service.Password
+
+	// password is limited to 8 bytes
+	if len(password) > 8 {
+		return fmt.Errorf("VNC password is too long (maximum 8 bytes, provided %d)", len(password))
+	}
+
+	// Switch password to big endian
+	passwordBytes := make([]byte, 8)
+	for i := 0; i < len(password); i++ {
+		passwordBytes[i] = bits.Reverse8(password[i])
+	}
+
+	block, err := des.NewCipher(passwordBytes)
+	if err != nil {
+		return err
+	}
+
+	// des cipher block is 8 bytes, so encrypt on each block
+	response := make([]byte, 16)
+	block.Encrypt(response[:8], challenge[:8])
+	block.Encrypt(response[8:], challenge[8:])
+
+	if err := binary.Write(c.Compute, binary.BigEndian, response); err != nil {
+		return err
+	}
+
+	if err := c.authComputeCheck(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *ConsoleClientVNC) authComputeVeNCrypt() error {
@@ -223,6 +267,16 @@ func (c *ConsoleClientVNC) authCompute() error {
 			chooseAuth = secType
 			break
 
+		case AUTH_PASSWORD:
+			if !c.Service.Insecure && !c.Service.TLSTunnel {
+				return fmt.Errorf("Auth type PASSWORD not permitted without Insecure flag or tlsTunnel flag")
+			}
+			if c.Service.Password == "" {
+				return fmt.Errorf("Auth type PASSWORD requires a password from the resolver.")
+			}
+			chooseAuth = secType
+			break
+
 		case AUTH_VENCRYPT:
 			if c.Service.Insecure {
 				return fmt.Errorf("Auth type VENCRYPT not permitted with Insecure flag")
@@ -246,6 +300,11 @@ func (c *ConsoleClientVNC) authCompute() error {
 	switch chooseAuth {
 	case AUTH_NONE:
 		if err := c.authComputeCheck(); err != nil {
+			return err
+		}
+
+	case AUTH_PASSWORD:
+		if err := c.authComputePassword(); err != nil {
 			return err
 		}
 
