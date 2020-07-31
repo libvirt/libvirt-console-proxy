@@ -42,5 +42,5 @@ var (
 )
 
 func init() {
-	RootCmd.PersistentFlags().StringVarP(&connect ,"connect", "c", "qemu:///system", "Libvirt connection URI")
+	RootCmd.PersistentFlags().StringVarP(&connect, "connect", "c", "qemu:///system", "Libvirt connection URI")
 }
