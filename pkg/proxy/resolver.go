@@ -59,7 +59,7 @@ func NewBuiltinResolver(tokenfile string) (*BuiltinResolver, error) {
 	if err != nil {
 		return nil, err
 	}
-	glog.V(2).Info("Loaded tokens %s", tokens)
+	glog.V(2).Infof("Loaded tokens %v", tokens)
 
 	return &BuiltinResolver{
 		tokens: tokens,
