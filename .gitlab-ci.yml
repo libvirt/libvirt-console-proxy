@@ -14,3 +14,14 @@ check-dco:
   except:
     variables:
       - $CI_PROJECT_NAMESPACE == 'libvirt'
+
+go-fmt:
+  stage: prebuild
+  image: registry.gitlab.com/libvirt/libvirt-ci/go-fmt:master
+  script:
+    - /go-fmt
+  artifacts:
+    paths:
+      - go-fmt.patch
+    expire_in: 1 week
+    when: on_failure
