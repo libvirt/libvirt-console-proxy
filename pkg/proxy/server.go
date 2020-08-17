@@ -30,6 +30,7 @@ import (
 	"fmt"
 	"github.com/golang/glog"
 	"golang.org/x/net/websocket"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -105,7 +106,7 @@ func (s *ConsoleServer) handleClient(tenant *websocket.Conn) {
 		return
 	}
 
-	glog.V(1).Infof("Resolving token %s", tokenValue)
+	glog.V(2).Infof("Resolving token %s", tokenValue)
 	service, err := s.Resolver.Resolve(tokenValue)
 	if err != nil {
 		tenant.Close()
@@ -141,11 +142,14 @@ func (s *ConsoleServer) handleClient(tenant *websocket.Conn) {
 		client = NewConsoleClientSerial(tenant, compute)
 
 	default:
-		fmt.Fprintln(os.Stderr, "Unexpected service type '%s'", service.Type)
+		fmt.Fprintf(os.Stderr, "Unexpected service type '%s'\n", service.Type)
 	}
 
 	err = client.Proxy()
-	if err != nil {
+	if err != nil && err == io.EOF {
+		glog.V(1).Infof("Disconnect for compute service %s at %s",
+			service.Type, service.Address)
+	} else if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return
 	}

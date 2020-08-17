@@ -59,7 +59,7 @@ func NewBuiltinResolver(tokenfile string) (*BuiltinResolver, error) {
 	if err != nil {
 		return nil, err
 	}
-	glog.V(1).Info("Loaded tokens %s", tokens)
+	glog.V(2).Info("Loaded tokens %s", tokens)
 
 	return &BuiltinResolver{
 		tokens: tokens,
@@ -113,7 +113,7 @@ func (r *ExternalResolver) Resolve(token string) (*ServiceConfig, error) {
 	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("Unable to resolve token: %s", data)
 	}
-	glog.V(1).Infof("Resolved '%s' to '%s'", token, data)
+	glog.V(2).Infof("Resolved '%s' to '%s'", token, data)
 
 	var service ServiceConfig
 	err = json.Unmarshal(data, &service)
