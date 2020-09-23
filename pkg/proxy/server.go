@@ -27,6 +27,7 @@ package proxy
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"github.com/golang/glog"
 	"golang.org/x/net/websocket"
@@ -34,6 +35,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sync"
 )
 
 type ConsoleServer struct {
@@ -43,6 +45,13 @@ type ConsoleServer struct {
 	Mux             *http.ServeMux
 	Insecure        bool
 	TLSClientConfig *tls.Config
+	Mutex           sync.Mutex
+	ActiveServices  []*ServiceConfig
+}
+
+type Diagnostics struct {
+	NumActive      int             `json:"number_active"`
+	ActiveServices []ServiceConfig `json:"active_sessions"`
 }
 
 func NewConsoleServer(listenAddr string, insecure bool, tlsServerConfig *tls.Config, tlsClientConfig *tls.Config, resolver Resolver) *ConsoleServer {
@@ -65,7 +74,31 @@ func NewConsoleServer(listenAddr string, insecure bool, tlsServerConfig *tls.Con
 	}
 
 	s.Mux.Handle("/websockify", s.WSServer)
+	s.Mux.HandleFunc("/healthz", func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	s.Mux.HandleFunc("/statusz", func(w http.ResponseWriter, req *http.Request) {
+		s.Mutex.Lock()
 
+		services := make([]ServiceConfig, len(s.ActiveServices))
+
+		for i, service := range s.ActiveServices {
+			sc := ServiceConfig(*service)
+			if sc.Password != "" {
+				sc.Password = "****"
+			}
+			services[i] = sc
+		}
+
+		d := Diagnostics{
+			NumActive:      len(services),
+			ActiveServices: services,
+		}
+
+		out, _ := json.Marshal(d)
+		s.Mutex.Unlock()
+		fmt.Fprintf(w, "%s", out)
+	})
 	return s
 }
 
@@ -145,7 +178,25 @@ func (s *ConsoleServer) handleClient(tenant *websocket.Conn) {
 		fmt.Fprintf(os.Stderr, "Unexpected service type '%s'\n", service.Type)
 	}
 
+	s.Mutex.Lock()
+	s.ActiveServices = append(s.ActiveServices, service)
+	s.Mutex.Unlock()
+
 	err = client.Proxy()
+
+	s.Mutex.Lock()
+	// Remove the service from the list of active services
+	for i, v := range s.ActiveServices {
+		if v == service {
+			lenMinusOne := len(s.ActiveServices) - 1
+			s.ActiveServices[i] = s.ActiveServices[lenMinusOne]
+			s.ActiveServices[lenMinusOne] = nil
+			s.ActiveServices = s.ActiveServices[:lenMinusOne]
+			break
+		}
+	}
+	s.Mutex.Unlock()
+
 	if err != nil && err == io.EOF {
 		glog.V(1).Infof("Disconnect for compute service %s at %s",
 			service.Type, service.Address)
