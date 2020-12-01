@@ -18,10 +18,10 @@ HOSTS=$($LCITOOL hosts | grep -v -E '(freebsd|centos-7|ubuntu-1804|macos)')
 
 for host in $HOSTS
 do
-    if test "$host" = "libvirt-centos-8"
+    if test "$host" = "centos-8"
     then
-        $LCITOOL dockerfile $host libvirt+minimal,libvirt+dist,libvirt-console-proxy > $host.Dockerfile
+        $LCITOOL dockerfile $host libvirt+minimal,libvirt+dist,libvirt-console-proxy > ci-$host.Dockerfile
     else
-        $LCITOOL dockerfile $host libvirt+dist,libvirt-console-proxy > $host.Dockerfile
+        $LCITOOL dockerfile $host libvirt+dist,libvirt-console-proxy > ci-$host.Dockerfile
     fi
 done
