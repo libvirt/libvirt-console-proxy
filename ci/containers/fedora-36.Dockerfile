@@ -4,10 +4,9 @@
 #
 # https://gitlab.com/libvirt/libvirt-ci
 
-FROM registry.fedoraproject.org/fedora:rawhide
+FROM registry.fedoraproject.org/fedora:36
 
-RUN dnf update -y --nogpgcheck fedora-gpg-keys && \
-    dnf install -y nosync && \
+RUN dnf install -y nosync && \
     echo -e '#!/bin/sh\n\
 if test -d /usr/lib64\n\
 then\n\
@@ -17,7 +16,7 @@ else\n\
 fi\n\
 exec "$@"' > /usr/bin/nosync && \
     chmod +x /usr/bin/nosync && \
-    nosync dnf distro-sync -y && \
+    nosync dnf update -y && \
     nosync dnf install -y \
                ca-certificates \
                ccache \
