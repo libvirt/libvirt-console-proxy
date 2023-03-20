@@ -1,4 +1,4 @@
-# libvirt-console-proxy [![Build Status](https://travis-ci.org/libvirt/libvirt-console-proxy.svg?branch=master)](https://travis-ci.org/libvirt/libvirt-console-proxy) [![GoDoc](https://godoc.org/github.com/libvirt/libvirt-console-proxy?status.svg)](https://godoc.org/github.com/libvirt/libvirt-console-proxy)
+# libvirt-console-proxy
 
 Websockets console proxy for VNC, SPICE and serial consoles
 
