@@ -19,38 +19,16 @@ and then run 'glide install' to populate vendor/
 ## Contributing
 
 Bug fixes and other improvements to the libvirt-console-proxy are
-welcome at any time. The preferred submission method is to use
-git send-email to submit patches to the libvir-list@redhat.com
-mailing list. eg. to send a single patch
+welcome at any time. The preferred submission method is via the gitlab
+project:
 
 ```
-  # git send-email --to libvir-list@redhat.com --subject-prefix "PATCH console-proxy" \
-       --smtp-server=$HOSTNAME -1
-```
-
-Or to send all patches on the current branch, against master
-
-```
-  $ git send-email --to libvir-list@redhat.com --subject-prefix "PATCH console-proxy" \
-       --smtp-server=$HOSTNAME --no-chain-reply-to --cover-letter --annotate \
-       master..
-```
-
-Note the master GIT repository is at
-
-```
-   http://libvirt.org/git/?p=libvirt-console-proxy.git;a=summary
+  https://gitlab.com/libvirt/libvirt-console-proxy
 ```
 
 The following automatic read-only mirrors are available as a
 convenience to allow contributors to "fork" the repository:
 
 ```
-  https://gitlab.com/libvirt/libvirt-console-proxy
   https://github.com/libvirt/libvirt-console-proxy
 ```
-
-While you can send pull-requests to these mirrors, they will be
-re-submitted via emai to the mailing list for review before
-being merged, unless they are trivial/obvious bug fixes.
-
