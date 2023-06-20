@@ -29,7 +29,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/satori/go.uuid"
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"libvirt.org/go/libvirt"
 	"libvirt.org/go/libvirtxml"
@@ -50,8 +50,8 @@ var (
 )
 
 func createConsole(ctype string, index int, conn *libvirt.Connect, domname, domuuid string) resolver.ConsoleServerProxyMetadataConsole {
-	tokenID := uuid.Must(uuid.NewV4())
-	tokenValue := uuid.Must(uuid.NewV4())
+	tokenID := uuid.Must(uuid.NewRandom())
+	tokenValue := uuid.Must(uuid.NewRandom())
 	console := resolver.ConsoleServerProxyMetadataConsole{
 		Token:    tokenID.String(),
 		Type:     ctype,
