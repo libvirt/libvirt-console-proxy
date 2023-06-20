@@ -41,7 +41,7 @@ import (
 	"libvirt.org/go/libvirt"
 	"libvirt.org/go/libvirtxml"
 
-	"libvirt.org/libvirt-console-proxy/pkg/proxy"
+	"libvirt.org/go/libvirtconsoleproxy/pkg/proxy"
 )
 
 type ConsoleServerDomain struct {

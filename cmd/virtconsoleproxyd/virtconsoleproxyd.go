@@ -33,8 +33,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/pflag"
 	"io/ioutil"
-	"libvirt.org/libvirt-console-proxy/pkg/proxy"
-	"libvirt.org/libvirt-console-proxy/pkg/util"
+	"libvirt.org/go/libvirtconsoleproxy/pkg/proxy"
+	"libvirt.org/go/libvirtconsoleproxy/pkg/util"
 	"os"
 	"strings"
 )

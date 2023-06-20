@@ -1,4 +1,4 @@
-module libvirt.org/libvirt-console-proxy
+module libvirt.org/go/libvirtconsoleproxy
 
 go 1.12
 
