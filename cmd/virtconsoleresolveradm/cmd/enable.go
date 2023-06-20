@@ -31,8 +31,8 @@ import (
 
 	"github.com/satori/go.uuid"
 	"github.com/spf13/cobra"
-	"libvirt.org/libvirt-go"
-	"libvirt.org/libvirt-go-xml"
+	"libvirt.org/go/libvirt"
+	"libvirt.org/go/libvirtxml"
 
 	"libvirt.org/libvirt-console-proxy/pkg/resolver"
 )

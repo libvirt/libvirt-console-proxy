@@ -30,7 +30,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"libvirt.org/libvirt-go"
+	"libvirt.org/go/libvirt"
 
 	"libvirt.org/libvirt-console-proxy/pkg/resolver"
 )

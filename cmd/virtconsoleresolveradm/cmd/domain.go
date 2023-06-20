@@ -29,7 +29,7 @@ import (
 	"regexp"
 	"strconv"
 
-	"libvirt.org/libvirt-go"
+	"libvirt.org/go/libvirt"
 )
 
 func GetDomain(conn *libvirt.Connect, identifier string) (*libvirt.Domain, error) {

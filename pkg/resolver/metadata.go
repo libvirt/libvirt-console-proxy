@@ -29,7 +29,7 @@ import (
 	"encoding/xml"
 
 	"github.com/golang/glog"
-	"libvirt.org/libvirt-go"
+	"libvirt.org/go/libvirt"
 )
 
 /*
