@@ -11,7 +11,7 @@ gitlab:
 targets:
   almalinux-8:
     projects:
-      - libvirt-go
+      - libvirt-go-module
       - libvirt+dist
       - libvirt+minimal
 
