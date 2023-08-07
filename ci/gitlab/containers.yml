@@ -42,11 +42,11 @@ x86_64-debian-sid-container:
     NAME: debian-sid
 
 
-x86_64-fedora-35-container:
+x86_64-fedora-37-container:
   extends: .container_job
   allow_failure: false
   variables:
-    NAME: fedora-35
+    NAME: fedora-37
 
 
 x86_64-fedora-36-container:
