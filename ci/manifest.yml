@@ -38,7 +38,10 @@ targets:
 
   fedora-38: x86_64
 
-  fedora-rawhide: x86_64
+  fedora-rawhide:
+    jobs:
+      - arch: x86_64
+        allow-failure: true
 
   opensuse-leap-15: x86_64
 

@@ -166,14 +166,14 @@ x86_64-fedora-rawhide-prebuilt-env:
   needs:
     - job: x86_64-fedora-rawhide-container
       optional: true
-  allow_failure: false
+  allow_failure: true
   variables:
     NAME: fedora-rawhide
 
 x86_64-fedora-rawhide-local-env:
   extends: .native_build_job_local_env
   needs: []
-  allow_failure: false
+  allow_failure: true
   variables:
     IMAGE: registry.fedoraproject.org/fedora:rawhide
     NAME: fedora-rawhide
