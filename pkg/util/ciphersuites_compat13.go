@@ -1,5 +1,5 @@
-// +build !go1.14
-// +build go1.12
+//go:build !go1.14 && go1.12
+// +build !go1.14,go1.12
 
 /*
  * This file is part of the libvirt-console-proxy project
