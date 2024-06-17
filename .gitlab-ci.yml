@@ -5,6 +5,8 @@ stages:
   - sanity_checks
 
 .native_git_build_job:
+  extends:
+    - .gitlab_native_build_job
   script:
     - export MAKEFLAGS="-j$(getconf _NPROCESSORS_ONLN)"
     - export SCRATCH_DIR="/tmp/scratch"
@@ -26,31 +28,13 @@ stages:
     - go build cmd/virtconsoleresolverd/virtconsoleresolverd.go
     - go test -v ./...
 
-.native_git_build_job_prebuilt_env:
-  extends:
-    - .native_git_build_job
-    - .gitlab_native_build_job_prebuilt_env
-
-.native_git_build_job_local_env:
-  extends:
-    - .native_git_build_job
-    - .gitlab_native_build_job_local_env
-
 .native_build_job:
+  extends:
+    - .gitlab_native_build_job
   script:
     - go build cmd/virtconsoleproxyd/virtconsoleproxyd.go
     - go build cmd/virtconsoleresolveradm/main.go
     - go build cmd/virtconsoleresolverd/virtconsoleresolverd.go
     - go test -v ./...
-
-.native_build_job_prebuilt_env:
-  extends:
-    - .native_build_job
-    - .gitlab_native_build_job_prebuilt_env
-
-.native_build_job_local_env:
-  extends:
-    - .native_build_job
-    - .gitlab_native_build_job_local_env
 
 include: '/ci/gitlab.yml'

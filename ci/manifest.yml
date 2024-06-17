@@ -1,6 +1,6 @@
 projects:
   - libvirt-console-proxy
-  - libvirt+dist
+  - https://gitlab.com/libvirt/libvirt/-/raw/master/ci/lcitool/projects/libvirt+dist.yml
 
 gitlab:
   namespace: libvirt
@@ -9,11 +9,11 @@ gitlab:
     go-fmt: true
 
 targets:
-  almalinux-8:
+  almalinux-9:
     projects:
-      - libvirt-go-module
-      - libvirt+dist
-      - libvirt+minimal
+      - libvirt-console-proxy
+      - https://gitlab.com/libvirt/libvirt/-/raw/master/ci/lcitool/projects/libvirt+dist.yml
+      - https://gitlab.com/libvirt/libvirt/-/raw/master/ci/lcitool/projects/libvirt+minimal.yml
 
     jobs:
       - arch: x86_64
@@ -26,17 +26,15 @@ targets:
             - build
             - scratch
 
-  centos-stream-8: x86_64
-
   centos-stream-9: x86_64
 
-  debian-10: x86_64
+  debian-12: x86_64
 
   debian-sid: x86_64
 
-  fedora-37: x86_64
+  fedora-39: x86_64
 
-  fedora-38: x86_64
+  fedora-40: x86_64
 
   fedora-rawhide:
     jobs:
@@ -47,6 +45,6 @@ targets:
 
   opensuse-tumbleweed: x86_64
 
-  ubuntu-2004: x86_64
-
   ubuntu-2204: x86_64
+
+  ubuntu-2404: x86_64
